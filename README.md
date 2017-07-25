@@ -1,2 +1,1 @@
-# pbsv_polish
-Polish structural variants
+Polish structural variants.

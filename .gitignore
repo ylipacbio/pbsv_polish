@@ -1,0 +1,13 @@
+*.pyc
+__pycache__/
+/tests/out/*
+/tests/cram/*.t.err
+/tests/cram/*.bam
+/tests/cram/*.fasta
+/tests/utest/*.bam
+/tests/utest/*.fasta
+/test-reports/
+/LOCAL/
+/.cache/
+/.coverage
+/*.xml

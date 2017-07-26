@@ -93,3 +93,20 @@ def test_SVPolishFiles():
     assert s.subreads_bam == 'dir/sr.subreads.bam'
     assert s.subreads_consensus_sh == 'dir/subreads_consensus.sh'
     assert s.dagcon_fa == 'dir/sv_pbdagcon.fasta'
+
+
+def test_iter_subreads_of_zmws_in_ds():
+    sr_fn = '/pbi/dept/bifx/awenger/prj/pbsv/test/HG00733/HG00733.subreadset.xml' # merged subreads
+    from pbcore.io import SubreadSet
+    sr_ds = SubreadSet(sr_fn)
+    zmws_str = """m54114_161221_000627/31457990/0_26603
+    m54155_170204_061828/62915355/0_10084
+    m54155_170204_061828/62915355/10128_10395
+    m54155_170206_115518/41091256/0_8207
+    m54155_170206_115518/44171750/0_11058
+    m54156_170203_003611/13632385/3826_29198"""
+    zmws = [zmw.strip() for zmw in zmws_str.split('\n')]
+    it = iter_subreads_of_zmws_in_ds(subreads_ds=sr_ds, zmws=zmws)
+    for sr in it:
+        print sr
+

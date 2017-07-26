@@ -4,7 +4,9 @@ import os.path as op
 import sys
 import os
 from collections import defaultdict
-from pbcore.io import DataSet, FastaWriter
+import numpy as np
+
+from pbcore.io import DataSet, FastaWriter, SubreadSet
 
 from pbsv.libs import Fastafile
 from pbsv.io.linefile import X2PysamReader, iter_within_ref_regions
@@ -13,7 +15,6 @@ from pbsv.independent.common import RefRegion
 from pbsv.independent.utils import execute, realpath, write_to_bash_file, execute_as_bash, mv_cmd, autofmt, is_fasta, is_fastq
 from pbsv.cli import _mkdir
 from pbsv.run import svcall_cmd, ngmlrmap_cmd
-
 
 
 def f(strs):
@@ -172,23 +173,55 @@ def get_query_subreads_from_alns(alns):
     """Given a list of alignments, return a list of non-redundant query subreads"""
     return list(set([aln.query_name for aln in alns]))
 
-from svkits.utils import get_movie2zmws_from_zmws, make_subreads_bam, make_subreads_bam_using_pbcore
+from svkits.utils import get_movie2zmws_from_zmws, make_subreads_bam, make_subreads_bam_using_pbcore, get_movie_and_zmw_from_name
 
 def make_subreads_bam_of_zmws(movie2bams, zmws, out_prefix, dry_run=False):
     movie2zmws = get_movie2zmws_from_zmws(zmws)
     return make_subreads_bam(movie2zmws, movie2bams, out_prefix, dry_run=dry_run)
 
-def make_subreads_bam_of_zmws2(movie2bams, zmws, out_bam):
+def sort_zmws_by_moive(zmws):
+    """ sort a list of zmws by moive names."""
+    return sorted(zmws, key=lambda zmw: get_movie_and_zmw_from_name(zmw)[0])
+
+def make_subreads_bam_of_zmws2(in_subreads_fn, zmws, out_bam): #(movie2bams, zmws, out_bam):
     """Make subreads bam of zmws
-    movie2bams --- {movie: bam_file}, e.g., {'movie1': 'path-to-movie1', 'movie2': 'path-to-movie2'}
+    in_subreads_fn --- subreads.bam or suberadset.xml
+    # movie2bams --- {movie: bam_file}, e.g., {'movie1': 'path-to-movie1', 'movie2': 'path-to-movie2'}
     zmws --- [zmw, ..., zmw] , e.g. ['movie1/100', 'movie2/200']
     """
-    movie2zmws = get_movie2zmws_from_zmws(zmws)
-    for zmw in zmws:
+    subreads_ds = SubreadSet(in_subreads_fn)
+    zmws = sort_zmws_by_moive(zmws)
+    #movie2zmws = get_movie2zmws_from_zmws(zmws)
+    #for zmw in zmws:
+    #    movie, zmw_int = zmw.split('/')[0], int(zmw.split('/')[1])
+    #    bam_fn = movie2bams[movie]
+    #    for sr in subreads_of_zmws_in_a_bam(subreads_fn=bam_fn, )
+    for subread in iter_subreads_of_zmws_in_ds(subreads_ds=subreads_ds, zmws=zmws):
         pass
+    # TODO, write reads to output bam, including bam header
 
-def iter_subreads_of_zmws_in_a_bam(subreads_fn, zmws):
-    ds = SubreadSet(subreads_fn)
+def iter_subreads_of_zmws_in_ds(subreads_ds, zmws):
+    """
+    Iterate over subreads of zmws in a subreads dataset
+    subreads_ds -- a SubreadSet object
+    zmws --- a list of zmws, e.g., e.g. ['movie1/100', 'movie2/200']
+    """
+    assert isinstance(subreads_ds, SubreadSet)
+    subreads = []
+    for zmw in zmws:
+        for subread in subreads_of_a_zmw_in_ds(subreads_ds, zmw):
+            yield subread
+
+
+def subreads_of_a_zmw_in_ds(subreads_ds, zmw):
+    """
+    Return a list of all subreads of a zmw in subreads_ds
+    subreads_ds -- a SubreadSet object
+    zmws --- a list of zmws, e.g., e.g. ['movie1/100', 'movie2/200']
+    """
+    movie, zmw_int = get_movie_and_zmw_from_name(zmw)
+    rows = np.nonzero(np.logical_and(subreads_ds.index.qId==subreads_ds.movieIds[movie], subreads_ds.index.holeNumber==zmw_int))[0]
+    return subreads_ds[rows]
 
 def get_subreads_bam_files_from_xml(in_subreads_xml):
     return [fn for fn in DataSet(in_subreads_xml).toExternalFiles() if fn.endswith('subreads.bam')]

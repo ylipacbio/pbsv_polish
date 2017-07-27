@@ -51,7 +51,6 @@ def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj,
     """
     srs = get_query_subreads_from_alns(alns)
     zmws = get_query_zmws_from_alns(alns)
-    #ofile_obj.write('%s\t%s\t%s\n' % (len(srs), len(zmws), bed_record))
 
     sv_prefix = bed2prefix(bed_record)
     data_dir = realpath(op.join(out_dir, sv_prefix))
@@ -78,9 +77,10 @@ def run(args):
     subreads_xml_fn = op.join(in_dir, "subreads.xml")
     genome_fa = op.join(in_dir, "genome.fa")
     bed_fn = realpath(args.bed_fn)
+    coverage_fn = op.join(out_dir, 'coverage.txt')
 
     reference_fasta_obj = Fastafile(genome_fa)
-    ofile_obj = open('coverage.txt', 'w')
+    ofile_obj = open(coverage_fn, 'w')
     alnfile_obj = X2PysamReader(aln_fn)._alignment_file
     subreads_ds_obj = SubreadSet(subreads_xml_fn)
     bedreader_obj = BedReader(bed_fn)
@@ -88,8 +88,11 @@ def run(args):
     i = 0
     for bed_record, alns in yield_alns_from_bed_file(alnfile_obj, bedreader_obj=bedreader_obj):
         i += 1
-        if i % 1000 == 0:
+        if (i % 1000) == 0:
             print "i=%s, got %s covering alignemnts for sv %s" % (i, len(alns), bed_record)
+
+        # write coverage info
+        ofile_obj.write('%s\t%s\n' % (len(get_query_subreads_from_alns(alns)), bed_record))
 
         polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa=True, make_subreads_bam=True, make_scripts=True)
 

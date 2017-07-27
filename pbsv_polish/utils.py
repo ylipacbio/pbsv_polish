@@ -41,13 +41,14 @@ class SVInputFiles(object):
         self.sv_bed = g('structural_variants.bed')
 
 class SVPolishFiles(object):
-    def __init__(self, root_dir, min_qv=20):
+    def __init__(self, root_dir, min_qv=Constant.MIN_POLISH_QV, ref_ext_len=Constant.REFERENCE_EXTENSION):
         """root_dir is a directory containing all files for sv polishing."""
         def g(fn):
             return op.join(self.root_dir, fn)
 
         self.root_dir = root_dir
         self.min_qv = min_qv
+        self.ref_ext_len = ref_ext_len
 
         self.subreads_consensus_sh = g('subreads_consensus.sh')
         self.readme = g('README')
@@ -60,7 +61,7 @@ class SVPolishFiles(object):
         self._dagcon_prefix = g('sv_pbdagcon')
         self.dagcon_fa = f([self._dagcon_prefix, 'fasta'])
 
-        self._sv_ref_prefix = g('sv_ref_w_ext')
+        self._sv_ref_prefix = g('sv_ref_w_ext_%s' % self.ref_ext_len)
         self.sv_ref_fa = f([self._sv_ref_prefix, 'fasta'])
 
         self.sr_dagcon_blasr_bam = g('sr.sv_pbdagcon.blasr.bam')
@@ -76,7 +77,7 @@ class SVPolishFiles(object):
         self.polish_ngmlr_sh = f([self._polish_prefix, 'ngmlr', 'sh'])
         self.polish_ref_ngmlr_bam = f([self._polish_prefix, 'ref', 'ngmlr', 'bam'])
 
-        self._polish_hqlq_prefix = f([self._polish_prefix, 'hqlq'])
+        self._polish_hqlq_prefix = g('polish.hqlq')
         self.polish_hqlq_fa = f([self._polish_hqlq_prefix, 'fasta'])
         self.polish_hqlq_fq = f([self._polish_hqlq_prefix, 'fastq'])
 
@@ -110,12 +111,12 @@ class SVPolishFiles(object):
         """
         align_bam = self.sr_dagcon_blasr_bam
         # c0 will generate sv_pbdagcon output consensus sequence of subreads with fai
-        c0 = sv_pbdagcon_cmd(self.subreads_bam, self._dagcon_prefix, 'subreads_consensus')
+        c0 = sv_pbdagcon_cmd(self.subreads_bam, self._dagcon_prefix, 'subreads_consensus', self.sv_ref_fa)
         c1 = blasr_cmd(query_fn=self.subreads_bam, target_fn=self.dagcon_fa, out_fn=align_bam, nproc=Constant.BLASR_NPROC)
         c2 = sort_index_bam_inline_cmd(align_bam)
         c3 = pbindex_cmd(align_bam)
         c4 = variant_caller_cmd(align_bam=align_bam, ref_fa=self.dagcon_fa,
-                                out_fa=self.polish_hqlq_fa, out_fq=self.polish_hqlq_fa, nproc=Constant.VARIANT_CALLER_NPROC)
+                                out_fa=self.polish_hqlq_fa, out_fq=self.polish_hqlq_fq, nproc=Constant.VARIANT_CALLER_NPROC)
         c5 = trim_lq_cmd(in_fq=self.polish_hqlq_fq, min_qv=self.min_qv, out_fq=self.polish_fq, out_fa=self.polish_fa)
         return [c0, c1, c2, c3, c4, c5]
 
@@ -134,6 +135,21 @@ class SVPolishFiles(object):
         return pbsv_run_and_transform_cmds(reads_fn=self.polish_fa, ref_fa_fn=self.sv_ref_fa,
                                            cfg_fn=Constant.PBSV_POLISH_CFG, o_bam_fn=self.polish_ref_blasr_bam,
                                            o_bed_fn=self.polish_blasr_bed, algorithm='blasr')
+
+def write_fasta(o_fasta_fn, records):
+    """Write a list of fasta records [(name, seq), ...,  (name, seq)] to o_fasta_fn"""
+    with FastaWriter(o_fasta_fn) as w:
+        for r in records:
+            w.writeRecord(r[0], r[1])
+
+def substr_fasta(fileobj, chrom, start, end, o_fasta_fn):
+    """fetch a substring of reference fasta sequence and save to output fasta file o_fasta_fn"""
+    try:
+        seq = fileobj.fetch(chrom, start, end)
+    except Exception as e:
+        raise ValueError("Could not get substring (%s, %s, %s) from %s" % (chrom, start, end, fileobj.filename))
+    name = '%s__substr__%s_%s' % (chrom, start, end)
+    write_fasta(o_fasta_fn, [(name, seq)])
 
 def get_aln_reader(aln_fn, bed_fn):
     # reader = get_aln_reader(aln_fn=aln_fn, bed_fn=bed_fn)
@@ -294,8 +310,8 @@ def blasr_cmd(query_fn, target_fn, out_fn, nproc=8):
     return "blasr {q} {t} {fmt} --out {out_fn} --nproc {nproc} --maxMatch 15 --bestn 10 --hitPolicy randombest".\
             format(q=query_fn, t=target_fn, out_fn=out_fn, fmt=_fn2fmtarg(out_fn), nproc=nproc)
 
-def sv_pbdagcon_cmd(subreads_bam, output_prefix, output_seq_id):
-    return 'sv_pbdagcon %s %s %s' % (subreads_bam, output_prefix, output_seq_id)
+def sv_pbdagcon_cmd(subreads_bam, output_prefix, output_seq_id, ref_fa):
+    return 'sv_pbdagcon %s %s %s --ref_fa %s' % (subreads_bam, output_prefix, output_seq_id, ref_fa)
 
 def variant_caller_cmd(align_bam, ref_fa, out_fa, out_fq, nproc):
     return "variantCaller --algorithm=best {align_bam} --verbose -j{nproc} --referenceFilename={ref_fa} -o {out_fa} -o {out_fq}".\
@@ -323,7 +339,7 @@ def pbsv_run_and_transform_cmds(reads_fn, ref_fa_fn, cfg_fn, o_bam_fn, o_bed_fn,
     else:
         raise ValueError('Could not use algorithm %s to align reads to reference.' % algorithm)
 
-    tmp_bed = o_bed_fn + 'use_substr_as_chrom.bed'
+    tmp_bed = o_bed_fn + '.use_substr_as_chrom.bed'
     c1 = svcall_cmd(ref_fn=ref_fa_fn, in_bam=o_bam_fn, out_bed=tmp_bed, cfg=cfg_fn)
     c2 = sv_transform_coordinate_cmd(tmp_bed, o_bed_fn)
     c3 = sort_index_bam_inline_cmd(o_bam_fn)

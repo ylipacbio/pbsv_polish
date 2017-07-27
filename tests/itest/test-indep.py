@@ -114,15 +114,23 @@ def test_yield_subreads_of_zmws_in_ds():
     assert s == 'm54114_161221_000627/31457990;m54155_170204_061828/62915355;m54155_170206_115518/41091256;m54155_170206_115518/44171750;m54156_170203_003611/13632385'
 
     out_bam_fn = op.join(OUT_DIR, 'test_make_subreads_bam_of_zmws2.bam')
-    make_subreads_bam_of_zmws2(sr_ds, zmws, out_bam_fn)
+    out_fa_fn = op.join(OUT_DIR, 'test_make_subreads_bam_of_zmws2.fa')
+    make_subreads_bam_of_zmws2(sr_ds, zmws, out_bam_fn, out_fa_fn)
     os.path.exists(out_bam_fn)
+    os.path.exists(out_fa_fn)
 
     out_sam_fn = op.join(OUT_DIR, 'test_make_subreads_bam_of_zmws2.sam')
     std_sam_fn = op.join(STD_DIR, 'test_make_subreads_bam_of_zmws2.sam')
+    std_fa_fn = op.join(STD_DIR, 'test_make_subreads_bam_of_zmws2.fa')
     execute('samtools view -h %s -o %s' % (out_bam_fn, out_sam_fn))
     assert open(out_sam_fn, 'r').readlines() == open(std_sam_fn, 'r').readlines()
+    assert open(out_fa_fn, 'r').readlines() == open(std_fa_fn, 'r').readlines()
 
 def test_get_bam_header_from_subreads_ds():
     sr_fn = '/pbi/dept/bifx/awenger/prj/pbsv/test/HG00733/HG00733.subreadset.xml' # merged subreads
     sr_ds = SubreadSet(sr_fn)
     header = get_bam_header_from_subreads_ds(sr_ds)
+
+def test_Constant():
+    assert op.exists(Constant.PBSV_POLISH_CFG)
+

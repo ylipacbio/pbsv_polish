@@ -23,7 +23,7 @@ def f(strs):
 #in_dir = 'in_sl_1813_yeast_10fold'
 
 class Constant(object):
-    PBSV_POLISH_CFG = op.join(__file__, 'data', 'pbsv.polish.cfg')
+    PBSV_POLISH_CFG = op.join(op.dirname(__file__), 'data', 'pbsv.polish.cfg')
     REFERENCE_EXTENSION = 2000
     MIN_POLISH_QV = 20
     BLASR_NPROC = 16
@@ -205,17 +205,21 @@ def get_bam_header_from_subreads_ds(ds):
     return header.header # a dict
 
 
-def make_subreads_bam_of_zmws2(in_subreads_fn_or_obj, zmws, out_bam_fn):
+def make_subreads_bam_of_zmws2(in_subreads_fn_or_obj, zmws, out_bam_fn, out_fa_fn=None):
     """Make subreads bam of zmws
     in_subreads_fn --- subreads.bam or suberadset.xml
     # movie2bams --- {movie: bam_file}, e.g., {'movie1': 'path-to-movie1', 'movie2': 'path-to-movie2'}
     zmws --- a list of zmws or reads, e.g. ['movie1/100', 'movie2/200'], or ['movie1/100/0_100']
+    if out_fa_fn is not None, generate fasta file as well
     """
     subreads_ds = _get_subreads_ds_from_fn_or_obj(in_subreads_fn_or_obj)
     assert isinstance(subreads_ds, SubreadSet)
     zmws = sort_zmws_by_moive(zmws)
     header = get_bam_header_from_subreads_ds(subreads_ds)
-    write_reads_bam(out_bam_fn=out_bam_fn, header=header, reads=yield_subreads_of_zmws_in_ds(subreads_ds=subreads_ds, zmws_or_reads=zmws))
+    reads = [r for r in yield_subreads_of_zmws_in_ds(subreads_ds=subreads_ds, zmws_or_reads=zmws)]
+    write_reads_bam(out_bam_fn=out_bam_fn, header=header, reads=reads)
+    if out_fa_fn:
+        write_reads_fasta(out_fa_fn=out_fa_fn, reads=reads)
 
 
 def get_non_redundant_zmws_from_zmws_or_reads(zmws_or_reads):
@@ -336,3 +340,8 @@ def write_reads_bam(out_bam_fn, header, reads):
     with AlignmentFile(out_bam_fn, "wb", header=header, check_sq=False) as writer:
         for subread in reads:
             writer.write(subread.peer)
+
+def write_reads_fasta(out_fa_fn, reads):
+    with FastaWriter(out_fa_fn) as writer:
+        for read in reads:
+            writer.writeRecord(read.readName, read.read(aligned=False))

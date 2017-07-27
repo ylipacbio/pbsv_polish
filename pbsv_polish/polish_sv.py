@@ -76,7 +76,7 @@ def run(args):
     aln_fn = op.join(in_dir, "alignments.bam")
     subreads_xml_fn = op.join(in_dir, "subreads.xml")
     genome_fa = op.join(in_dir, "genome.fa")
-    bed_fn = realpath(args.bed_fn)
+    bed_fn = realpath(args.in_bed_fn)
     coverage_fn = op.join(out_dir, 'coverage.txt')
 
     reference_fasta_obj = Fastafile(genome_fa)
@@ -110,7 +110,7 @@ def get_parser():
     parser = ArgumentParser("")
     parser.add_argument("in_dir", type=str, help="Input FASTA or FASTQ filename")
     parser.add_argument("in_bed_fn", type=str, help="Structural variants in BED file")
-    parser.add_argument("output_dir", type=str, help="Output Directory")
+    parser.add_argument("out_dir", type=str, help="Output Directory")
     return parser
 
 

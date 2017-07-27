@@ -26,23 +26,7 @@ blasr polished.hqlq.fasta sv_reference_w_extension.fasta --header --maxMatch 15 
     with open(diagnose_fn, 'w') as w:
         w.write(cmd)
 
-def write_fasta(o_fasta_fn, records):
-    """Write a list of fasta records [(name, seq), ...,  (name, seq)] to o_fasta_fn"""
-    with FastaWriter(o_fasta_fn) as w:
-        for r in records:
-            w.writeRecord(r[0], r[1])
-
-def substr_fasta(fileobj, chrom, start, end, o_fasta_fn):
-    """fetch a substring of reference fasta sequence and save to output fasta file o_fasta_fn"""
-    try:
-        seq = fileobj.fetch(chrom, start, end)
-    except Exception as e:
-        raise ValueError("Could not get substring (%s, %s, %s) from %s" % (chrom, start, end, fileobj.filename))
-    name = '%s__substr__%s_%s' % (chrom, start, end)
-    write_fasta(o_fasta_fn, [(name, seq)])
-
-
-def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa, make_subreads_bam, make_scripts):
+def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa, make_subreads_bam, make_scripts, min_qv):
     """
     Given a structural variant (as bed_record) and its supportive alignments, polish the given structural variant.
     * if make_reference_fa is True, generate a substr of chromosome as reference for this structural variant
@@ -54,7 +38,7 @@ def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj,
 
     sv_prefix = bed2prefix(bed_record)
     data_dir = realpath(op.join(out_dir, sv_prefix))
-    svp_files_obj = SVPolishFiles(root_dir=data_dir, min_qv=Constant.MIN_POLISH_QV)
+    svp_files_obj = SVPolishFiles(root_dir=data_dir, min_qv=min_qv)
     _mkdir(svp_files_obj.root_dir) # make a subdirectory (e.g., chrI_0_100_Deletion_-100) for all polishing files
 
     if make_reference_fa:
@@ -64,7 +48,7 @@ def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj,
 
     if make_subreads_bam:
         # get all raw subreads spanning the structural variants
-        make_subreads_bam_of_zmws2(in_subreads_fn_or_obj=subreads_ds_obj, zmws=zmws, out_bam_fn=svp_files_obj.subreads_bam)
+        make_subreads_bam_of_zmws2(in_subreads_fn_or_obj=subreads_ds_obj, zmws=zmws, out_bam_fn=svp_files_obj.subreads_bam, out_fa_fn=svp_files_obj.subreads_fa)
 
     if make_scripts:
         svp_files_obj.make_all_scripts()
@@ -72,6 +56,7 @@ def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj,
 
 def run(args):
     in_dir, out_dir = args.in_dir, args.out_dir
+    _mkdir(out_dir)
 
     aln_fn = op.join(in_dir, "alignments.bam")
     subreads_xml_fn = op.join(in_dir, "subreads.xml")
@@ -94,7 +79,7 @@ def run(args):
         # write coverage info
         ofile_obj.write('%s\t%s\n' % (len(get_query_subreads_from_alns(alns)), bed_record))
 
-        polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa=True, make_subreads_bam=True, make_scripts=True)
+        polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa=True, make_subreads_bam=True, make_scripts=True, min_qv=args.min_qv)
 
         if i == 1000:
            break
@@ -111,6 +96,7 @@ def get_parser():
     parser.add_argument("in_dir", type=str, help="Input FASTA or FASTQ filename")
     parser.add_argument("in_bed_fn", type=str, help="Structural variants in BED file")
     parser.add_argument("out_dir", type=str, help="Output Directory")
+    parser.add_argument("--min_qv", default=Constant.MIN_POLISH_QV, type=int, help="Minimum Polished QV to include bases in consensus sequence")
     return parser
 
 

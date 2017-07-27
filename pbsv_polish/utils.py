@@ -8,7 +8,7 @@ import numpy as np
 
 from pbcore.io import DataSet, FastaWriter, SubreadSet
 
-from pbsv.libs import Fastafile
+from pbsv.libs import Fastafile, AlignmentFile
 from pbsv.io.linefile import X2PysamReader, iter_within_ref_regions
 from pbsv.io.VcfIO import BedReader
 from pbsv.independent.common import RefRegion
@@ -183,31 +183,54 @@ def sort_zmws_by_moive(zmws):
     """ sort a list of zmws by moive names."""
     return sorted(zmws, key=lambda zmw: get_movie_and_zmw_from_name(zmw)[0])
 
-def make_subreads_bam_of_zmws2(in_subreads_fn, zmws, out_bam): #(movie2bams, zmws, out_bam):
+def _get_subreads_ds_from_fn_or_obj(in_subreads_fn_or_obj):
+    return SubreadSet(in_subreads_fn_or_obj) if isinstance(in_subreads_fn_or_obj, str) else in_subreads_fn_or_obj
+
+
+def get_bam_header_from_subreads_ds(ds):
+    """Return a BamHeader obj from a SubreadSet.
+    ds --- SubreadSet
+    """
+    from pbtranscript.io.PbiBamIO import BamHeader
+    from pbcore.io import IndexedBamReader
+    header = BamHeader(ignore_pg=True)
+    for bam in ds.resourceReaders():
+        if not isinstance(bam, IndexedBamReader):
+            raise ValueError("%s must have pbi index generated", bam.filename)
+        header.add(bam.peer.header)
+        for rg in bam.peer.header["RG"]: #readGroupTable:
+            if rg['PL'] != "PACBIO":
+                raise IOError("Input BAM file %s for %s must be PacBio BAM.", bam.filename, 'get_bam_header')
+        for rg in bam.readGroupTable:
+            assert rg.ReadType in ["SUBREAD"]
+    return header.header # a dict
+
+
+def make_subreads_bam_of_zmws2(in_subreads_fn_or_obj, zmws, out_bam_fn):
     """Make subreads bam of zmws
     in_subreads_fn --- subreads.bam or suberadset.xml
     # movie2bams --- {movie: bam_file}, e.g., {'movie1': 'path-to-movie1', 'movie2': 'path-to-movie2'}
-    zmws --- [zmw, ..., zmw] , e.g. ['movie1/100', 'movie2/200']
+    zmws --- a list of zmws or reads, e.g. ['movie1/100', 'movie2/200'], or ['movie1/100/0_100']
     """
-    subreads_ds = SubreadSet(in_subreads_fn)
+    subreads_ds = _get_subreads_ds_from_fn_or_obj(in_subreads_fn_or_obj)
+    assert isinstance(subreads_ds, SubreadSet)
     zmws = sort_zmws_by_moive(zmws)
-    #movie2zmws = get_movie2zmws_from_zmws(zmws)
-    #for zmw in zmws:
-    #    movie, zmw_int = zmw.split('/')[0], int(zmw.split('/')[1])
-    #    bam_fn = movie2bams[movie]
-    #    for sr in subreads_of_zmws_in_a_bam(subreads_fn=bam_fn, )
-    for subread in iter_subreads_of_zmws_in_ds(subreads_ds=subreads_ds, zmws=zmws):
-        pass
-    # TODO, write reads to output bam, including bam header
+    header = get_bam_header_from_subreads_ds(subreads_ds)
+    write_reads_bam(out_bam_fn=out_bam_fn, header=header, reads=yield_subreads_of_zmws_in_ds(subreads_ds=subreads_ds, zmws_or_reads=zmws))
 
-def iter_subreads_of_zmws_in_ds(subreads_ds, zmws):
+
+def get_non_redundant_zmws_from_zmws_or_reads(zmws_or_reads):
+    """Return a list of non-redundant zmws from a list of zmws or reads"""
+    return sort_zmws_by_moive(list(set(['/'.join([str(x) for x in get_movie_and_zmw_from_name(zmw)]) for zmw in zmws_or_reads])))
+
+def yield_subreads_of_zmws_in_ds(subreads_ds, zmws_or_reads):
     """
     Iterate over subreads of zmws in a subreads dataset
     subreads_ds -- a SubreadSet object
-    zmws --- a list of zmws, e.g., e.g. ['movie1/100', 'movie2/200']
+    zmws_or_reads --- a list of zmws or reads, e.g., ['movie1/100', 'movie2/200'] or ['movie1/100/0_10']
     """
     assert isinstance(subreads_ds, SubreadSet)
-    subreads = []
+    zmws = get_non_redundant_zmws_from_zmws_or_reads(zmws_or_reads)
     for zmw in zmws:
         for subread in subreads_of_a_zmw_in_ds(subreads_ds, zmw):
             yield subread
@@ -220,7 +243,7 @@ def subreads_of_a_zmw_in_ds(subreads_ds, zmw):
     zmws --- a list of zmws, e.g., e.g. ['movie1/100', 'movie2/200']
     """
     movie, zmw_int = get_movie_and_zmw_from_name(zmw)
-    rows = np.nonzero(np.logical_and(subreads_ds.index.qId==subreads_ds.movieIds[movie], subreads_ds.index.holeNumber==zmw_int))[0]
+    rows = np.nonzero(np.logical_and(subreads_ds.index.qId==subreads_ds.movieIds[movie], subreads_ds.index.holeNumber==zmw_int))[0] # pylint: disable=no-member
     return subreads_ds[rows]
 
 def get_subreads_bam_files_from_xml(in_subreads_xml):
@@ -309,3 +332,8 @@ def qsub_to_sge_or_run_local(script_fn, use_sge=False):
     else:
         cmd = 'chmod +x %s && bash %s' % (script_fn, script_fn)
     execute(cmd)
+
+def write_reads_bam(out_bam_fn, header, reads):
+    with AlignmentFile(out_bam_fn, "wb", header=header, check_sq=False) as writer:
+        for subread in reads:
+            writer.write(subread.peer)

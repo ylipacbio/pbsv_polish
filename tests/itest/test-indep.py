@@ -18,6 +18,7 @@ import os.path as op
 THIS_DIR = op.dirname(os.path.abspath(os.path.realpath(__file__)))
 DATA_DIR = op.join(THIS_DIR, '../data')
 OUT_DIR = op.join(THIS_DIR, '../out')
+STD_DIR = op.join(THIS_DIR, '../stdout')
 PBSV_POLISH_CFG = op.join(DATA_DIR, 'pbsv.polish.cfg')
 
 import logging
@@ -95,9 +96,9 @@ def test_SVPolishFiles():
     assert s.dagcon_fa == 'dir/sv_pbdagcon.fasta'
 
 
-def test_iter_subreads_of_zmws_in_ds():
+from pbcore.io import SubreadSet
+def test_yield_subreads_of_zmws_in_ds():
     sr_fn = '/pbi/dept/bifx/awenger/prj/pbsv/test/HG00733/HG00733.subreadset.xml' # merged subreads
-    from pbcore.io import SubreadSet
     sr_ds = SubreadSet(sr_fn)
     zmws_str = """m54114_161221_000627/31457990/0_26603
     m54155_170204_061828/62915355/0_10084
@@ -106,7 +107,22 @@ def test_iter_subreads_of_zmws_in_ds():
     m54155_170206_115518/44171750/0_11058
     m54156_170203_003611/13632385/3826_29198"""
     zmws = [zmw.strip() for zmw in zmws_str.split('\n')]
-    it = iter_subreads_of_zmws_in_ds(subreads_ds=sr_ds, zmws=zmws)
-    for sr in it:
-        print sr
+    it = yield_subreads_of_zmws_in_ds(subreads_ds=sr_ds, zmws_or_reads=zmws)
+    assert ';'.join(sorted([sr.readName for sr in it])) == ';'.join(sorted(zmws))
 
+    s = ';'.join(get_non_redundant_zmws_from_zmws_or_reads(zmws))
+    assert s == 'm54114_161221_000627/31457990;m54155_170204_061828/62915355;m54155_170206_115518/41091256;m54155_170206_115518/44171750;m54156_170203_003611/13632385'
+
+    out_bam_fn = op.join(OUT_DIR, 'test_make_subreads_bam_of_zmws2.bam')
+    make_subreads_bam_of_zmws2(sr_ds, zmws, out_bam_fn)
+    os.path.exists(out_bam_fn)
+
+    out_sam_fn = op.join(OUT_DIR, 'test_make_subreads_bam_of_zmws2.sam')
+    std_sam_fn = op.join(STD_DIR, 'test_make_subreads_bam_of_zmws2.sam')
+    execute('samtools view -h %s -o %s' % (out_bam_fn, out_sam_fn))
+    assert open(out_sam_fn, 'r').readlines() == open(std_sam_fn, 'r').readlines()
+
+def test_get_bam_header_from_subreads_ds():
+    sr_fn = '/pbi/dept/bifx/awenger/prj/pbsv/test/HG00733/HG00733.subreadset.xml' # merged subreads
+    sr_ds = SubreadSet(sr_fn)
+    header = get_bam_header_from_subreads_ds(sr_ds)

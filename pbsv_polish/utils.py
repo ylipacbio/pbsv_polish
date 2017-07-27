@@ -13,8 +13,8 @@ from pbsv.io.linefile import X2PysamReader, iter_within_ref_regions
 from pbsv.io.VcfIO import BedReader
 from pbsv.independent.common import RefRegion
 from pbsv.independent.utils import execute, realpath, write_to_bash_file, execute_as_bash, mv_cmd, autofmt, is_fasta, is_fastq
-from pbsv.cli import _mkdir
 from pbsv.run import svcall_cmd, ngmlrmap_cmd
+from .__init__ import __file__
 
 
 def f(strs):
@@ -23,7 +23,6 @@ def f(strs):
 #in_dir = 'in_sl_1813_yeast_10fold'
 
 class Constant(object):
-    from .__init__ import __file__
     PBSV_POLISH_CFG = op.join(__file__, 'data', 'pbsv.polish.cfg')
     REFERENCE_EXTENSION = 2000
     MIN_POLISH_QV = 20

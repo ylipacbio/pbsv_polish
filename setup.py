@@ -42,7 +42,7 @@ setup(
     author_email='awenger@pacificbiosciences.com, yli@pacificbiosciences.com',
     description='PacBio structure variants polishing tool.',
     entry_points={'console_scripts': [
-        'polish_sv = pobsv_polish.polish_sv:main'
+        'polish_sv = pbsv_polish.polish_sv:main'
     ]},
     install_requires=_get_requirements(_get_local_file(_REQUIREMENTS_FILE)),
     tests_require=['pytest'],

@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+from argparse import ArgumentParser
 import os.path as op
 import sys
 import os
@@ -11,9 +13,6 @@ from pbsv.cli import _mkdir
 
 from .utils import *
 
-
-def make_script_of_pbsv_blasr_call(reads_fn, ref_fa_fn, cfg_fn, o_prefix):
-    pass
 
 
 def make_diagnose_script_for_pbsv_run(o_dir):
@@ -72,15 +71,13 @@ def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj,
         svp_files_obj.make_all_scripts()
 
 
-def main():
-    #in_dir = "in_sl_228_hg00733_10fold"
-    in_dir = 'in_sl_1813_yeast_10fold'
+def run(args):
+    in_dir, out_dir = args.in_dir, args.out_dir
+
     aln_fn = op.join(in_dir, "alignments.bam")
     subreads_xml_fn = op.join(in_dir, "subreads.xml")
     genome_fa = op.join(in_dir, "genome.fa")
-    bed_fn = op.join(in_dir, 'structural_variants.bed')
-    #bed_fn = op.join(in_dir, 'chrV_116286_116286_Insertion_5899.bed')
-    out_dir = 'out'
+    bed_fn = realpath(args.bed_fn)
 
     reference_fasta_obj = Fastafile(genome_fa)
     ofile_obj = open('coverage.txt', 'w')
@@ -104,6 +101,19 @@ def main():
     alnfile_obj.close()
     subreads_ds_obj.close()
     bedreader_obj.close()
+
+def get_parser():
+    """Set up and return argument parser."""
+    parser = ArgumentParser("")
+    parser.add_argument("in_dir", type=str, help="Input FASTA or FASTQ filename")
+    parser.add_argument("in_bed_fn", type=str, help="Structural variants in BED file")
+    parser.add_argument("output_dir", type=str, help="Output Directory")
+    return parser
+
+
+def main():
+    """main"""
+    sys.exit(run(get_parser().parse_args(sys.argv[1:])))
 
 if __name__ == "__main__":
     main()

@@ -44,7 +44,8 @@ setup(
     entry_points={'console_scripts': [
         'sv_pbdagcon = pbsv_polish.sv_pbdagcon:main',
         'polish_sv = pbsv_polish.polish_sv:main',
-        'collect_polished_sv = pbsv_polish.collect_polished_sv:main'
+        'collect_polished_sv = pbsv_polish.collect_polished_sv:main',
+        'substr_fasta = pbsv_polish.substr_fasta:main'
     ]},
     install_requires=_get_requirements(_get_local_file(_REQUIREMENTS_FILE)),
     tests_require=['pytest'],

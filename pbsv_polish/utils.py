@@ -16,6 +16,11 @@ from pbsv.independent.utils import execute, realpath, write_to_bash_file, execut
 from pbsv.run import svcall_cmd, ngmlrmap_cmd
 from .__init__ import __file__
 
+import logging
+logging.basicConfig()
+logging.getLogger().setLevel(logging.INFO)
+log = logging.getLogger()
+
 
 def f(strs):
     return '.'.join(strs)
@@ -25,9 +30,10 @@ def f(strs):
 class Constant(object):
     PBSV_POLISH_CFG = op.join(op.dirname(__file__), 'data', 'pbsv.polish.cfg')
     REFERENCE_EXTENSION = 2000
+    REFERENCE_EXTENSION_SV_FACTOR = 2
     MIN_POLISH_QV = 20
-    BLASR_NPROC = 16
-    VARIANT_CALLER_NPROC = 8
+    BLASR_NPROC = 4
+    VARIANT_CALLER_NPROC = 4
 
 
 class SVInputFiles(object):
@@ -61,7 +67,8 @@ class SVPolishFiles(object):
         self._dagcon_prefix = g('sv_pbdagcon')
         self.dagcon_fa = f([self._dagcon_prefix, 'fasta'])
 
-        self._sv_ref_prefix = g('sv_ref_w_ext_%s' % self.ref_ext_len)
+        #self._sv_ref_prefix = g('sv_ref_w_ext_%s' % self.ref_ext_len)
+        self._sv_ref_prefix = g('sv_ref_w_ext')
         self.sv_ref_fa = f([self._sv_ref_prefix, 'fasta'])
 
         self.sr_dagcon_blasr_bam = g('sr.sv_pbdagcon.blasr.bam')
@@ -81,6 +88,8 @@ class SVPolishFiles(object):
         self.polish_hqlq_fa = f([self._polish_hqlq_prefix, 'fasta'])
         self.polish_hqlq_fq = f([self._polish_hqlq_prefix, 'fastq'])
 
+        self.run_sh = g('run.sh')
+
     def make_readme(self):
         """Write all files to readme"""
         with open(self.readme, 'w') as writer:
@@ -94,6 +103,15 @@ class SVPolishFiles(object):
         self.make_polish_ngmlr_script()
         self.make_polish_blasr_script()
         self.make_subreads_consensus_script()
+        write_to_bash_file(cmds=self.scripts, fn=self.run_sh)
+        for sh_fn in self.scripts + [self.run_sh]:
+            execute('chmod +x %s' % sh_fn)
+
+    def execute_all_scripts(self, use_sge):
+        try:
+            qsub_to_sge_or_run_local(script_fn=self.run_sh, use_sge=use_sge)
+        except Exception:
+            print 'FAILED TO POLISH SV %s' % self.root_dir
 
     def make_polish_ngmlr_script(self):
         write_to_bash_file(cmds=self.polish_ngmlr_cmds, fn=self.polish_ngmlr_sh)
@@ -279,7 +297,6 @@ def get_movies2bams_from_subreads_bam_files(subreads_bam_fns):
     movie2bams = defaultdict(lambda:set())
     for fn in subreads_bam_fns:
         movie = fn.split('/')[-1].split('.')[0]
-        print "movie=%s" % movie
         if movie in movie2bams and not fn == movie2bams[movie]:
             raise ValueError("Movie %s mapping to multiple bam files %r and %r" % (movie, movie2bams[movie], fn))
         movie2bams[movie].add(fn)
@@ -341,15 +358,22 @@ def pbsv_run_and_transform_cmds(reads_fn, ref_fa_fn, cfg_fn, o_bam_fn, o_bed_fn,
 
     tmp_bed = o_bed_fn + '.use_substr_as_chrom.bed'
     c1 = svcall_cmd(ref_fn=ref_fa_fn, in_bam=o_bam_fn, out_bed=tmp_bed, cfg=cfg_fn)
-    c2 = sv_transform_coordinate_cmd(tmp_bed, o_bed_fn)
-    c3 = sort_index_bam_inline_cmd(o_bam_fn)
-    return [c0, c1, c2, c3]
+    c2 = rm_ngmlr_indices_cmd(ref_fn=ref_fa_fn)
+    c3 = sv_transform_coordinate_cmd(tmp_bed, o_bed_fn)
+    c4 = sort_index_bam_inline_cmd(o_bam_fn)
+    return [c0, c1, c2, c3, c4]
+
+def rm_ngmlr_indices_cmd(ref_fn):
+    from pbsv.ngmlrmap import _ngm_1, _ngm_2
+    return 'rm -f %s %s' % (_ngm_1(ref_fn), _ngm_2(ref_fn))
 
 def qsub_to_sge_or_run_local(script_fn, use_sge=False):
     if use_sge:
-        cmd = 'qsub -q def66 -pe smp 1 -v -cwd -b y {f} 1>{f}.stdout.log 2>{f}.stderr.log'.format(f=script_fn)
+        cmd = 'qsub -q default -V -pe smp 1 -v -cwd -b y {f} -e {f}.qerr.log -o {f}.qout.log 1>{f}.stdout.log 2>{f}.stderr.log'.format(f=script_fn)
+        log.info(cmd)
     else:
         cmd = 'chmod +x %s && bash %s' % (script_fn, script_fn)
+        log.info(cmd)
     execute(cmd)
 
 def write_reads_bam(out_bam_fn, header, reads):
@@ -361,3 +385,9 @@ def write_reads_fasta(out_fa_fn, reads):
     with FastaWriter(out_fa_fn) as writer:
         for read in reads:
             writer.writeRecord(read.readName, read.read(aligned=False))
+
+def get_ref_extension_for_sv(bed_record):
+    """Get reference extension for structural variant"""
+    s = max(0, bed_record.start - max(Constant.REFERENCE_EXTENSION_SV_FACTOR*bed_record.sv_len, Constant.REFERENCE_EXTENSION))
+    e = bed_record.end + max(Constant.REFERENCE_EXTENSION_SV_FACTOR*bed_record.sv_len, Constant.REFERENCE_EXTENSION)
+    return s, e

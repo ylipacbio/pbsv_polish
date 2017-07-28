@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 import os.path as op
 import sys
 import os
+import logging
 from collections import defaultdict
 from pbcore.io import DataSet, FastaWriter
 
@@ -13,6 +14,10 @@ from pbsv.cli import _mkdir
 
 from .utils import *
 
+import logging
+logging.basicConfig()
+logging.getLogger().setLevel(logging.INFO)
+log = logging.getLogger()
 
 
 def make_diagnose_script_for_pbsv_run(o_dir):
@@ -26,7 +31,7 @@ blasr polished.hqlq.fasta sv_reference_w_extension.fasta --header --maxMatch 15 
     with open(diagnose_fn, 'w') as w:
         w.write(cmd)
 
-def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa, make_subreads_bam, make_scripts, min_qv):
+def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa, make_subreads_bam, make_scripts, execute_scripts, min_qv, use_sge):
     """
     Given a structural variant (as bed_record) and its supportive alignments, polish the given structural variant.
     * if make_reference_fa is True, generate a substr of chromosome as reference for this structural variant
@@ -43,7 +48,8 @@ def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj,
 
     if make_reference_fa:
         # make a substring spanning the expected structural variants
-        ref_start, ref_end = max(0, bed_record.start - Constant.REFERENCE_EXTENSION), bed_record.end + Constant.REFERENCE_EXTENSION
+        #ref_start, ref_end = max(0, bed_record.start - Constant.REFERENCE_EXTENSION), bed_record.end + Constant.REFERENCE_EXTENSION
+        ref_start, ref_end = get_ref_extension_for_sv(bed_record)
         substr_fasta(fileobj=reference_fasta_obj, chrom=bed_record.chrom, start=ref_start, end=ref_end, o_fasta_fn=svp_files_obj.sv_ref_fa)
 
     if make_subreads_bam:
@@ -52,6 +58,9 @@ def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj,
 
     if make_scripts:
         svp_files_obj.make_all_scripts()
+
+    if execute_scripts:
+        svp_files_obj.execute_all_scripts(use_sge=use_sge)
 
 
 def run(args):
@@ -70,19 +79,12 @@ def run(args):
     subreads_ds_obj = SubreadSet(subreads_xml_fn)
     bedreader_obj = BedReader(bed_fn)
 
-    i = 0
     for bed_record, alns in yield_alns_from_bed_file(alnfile_obj, bedreader_obj=bedreader_obj):
-        i += 1
-        if (i % 1000) == 0:
-            print "i=%s, got %s covering alignemnts for sv %s" % (i, len(alns), bed_record)
+        log.info("Processing sv %s" % bed2prefix(bed_record))
+        print("Processing sv %s" % bed2prefix(bed_record))
+        ofile_obj.write('%s\t%s\n' % (len(get_query_subreads_from_alns(alns)), bed_record)) # write coverage info
 
-        # write coverage info
-        ofile_obj.write('%s\t%s\n' % (len(get_query_subreads_from_alns(alns)), bed_record))
-
-        polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa=True, make_subreads_bam=True, make_scripts=True, min_qv=args.min_qv)
-
-        if i == 1000:
-           break
+        polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa=True, make_subreads_bam=True, make_scripts=True, execute_scripts=True, min_qv=args.min_qv, use_sge=args.use_sge)
 
     reference_fasta_obj.close()
     ofile_obj.close()
@@ -97,6 +99,7 @@ def get_parser():
     parser.add_argument("in_bed_fn", type=str, help="Structural variants in BED file")
     parser.add_argument("out_dir", type=str, help="Output Directory")
     parser.add_argument("--min_qv", default=Constant.MIN_POLISH_QV, type=int, help="Minimum Polished QV to include bases in consensus sequence")
+    parser.add_argument("--use_sge", default=False, action='store_true', help="If True, use SGE; otherwise, run locally")
     return parser
 
 

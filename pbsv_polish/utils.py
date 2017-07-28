@@ -163,7 +163,7 @@ def write_fasta(o_fasta_fn, records):
 def substr_fasta(fileobj, chrom, start, end, o_fasta_fn):
     """fetch a substring of reference fasta sequence and save to output fasta file o_fasta_fn"""
     try:
-        seq = fileobj.fetch(chrom, start, end)
+        seq = fileobj.fetch(str(chrom), int(start), int(end))
     except Exception as e:
         raise ValueError("Could not get substring (%s, %s, %s) from %s" % (chrom, start, end, fileobj.filename))
     name = '%s__substr__%s_%s' % (chrom, start, end)

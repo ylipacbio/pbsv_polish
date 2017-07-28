@@ -29,7 +29,7 @@ def f(strs):
 
 class Constant(object):
     PBSV_POLISH_CFG = op.join(op.dirname(__file__), 'data', 'pbsv.polish.cfg')
-    REFERENCE_EXTENSION = 2000
+    REFERENCE_EXTENSION = 1000
     REFERENCE_EXTENSION_SV_FACTOR = 2
     MIN_POLISH_QV = 20
     BLASR_NPROC = 4

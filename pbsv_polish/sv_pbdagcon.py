@@ -23,7 +23,7 @@ from pbsv.cli import _mkdir
 from pbsv.io.linefile import X2PysamReader
 from pbsv.libs import AlignmentFile, AlignedSegment
 
-from pbtranscript.io import FastaRandomReader
+from pbtranscript.io import FastaRandomReader, BLASRM4Reader
 from pbsv.__init__ import get_version
 
 
@@ -246,18 +246,51 @@ def get_fasta_fn_from_subreads_bam_fn(bam_fn):
 from .utils import blasr_cmd
 
 def write_best_mappable_substr(in_fa_fn, ref_fa_fn, out_fa_fn, read_name):
-    out_m4_fn = out_fa_fn+'.m4'
-    execute(blasr_cmd(query_fn=in_fa_fn, target_fn=ref_fa_fn, out_fn=out_m4_fn))
-    from pbtranscript.io import BLASRM4Reader
     from .utils import substr_fasta
     from pbsv.libs import Fastafile
-    m4_records = [r for r in BLASRM4Reader(out_m4_fn)]
-    if len(m4_records) > 0:
-        best_record = sorted(m4_records, lambda m4_record: m4_record.score, reverse=True)[0]
-        substr_fasta(fileobj=Fastafile(in_fa_fn), chrom=read_name,
-                     start=best_record.qStart, end=best_record.qEnd, o_fasta_fn=out_fa_fn)
+
+    forward_m4_fn = out_fa_fn+'.forward.m4'
+    reverse_m4_fn = out_fa_fn+'.reverse.m4'
+    execute(blasr_cmd(query_fn=in_fa_fn, target_fn=ref_fa_fn, out_fn=forward_m4_fn))
+    execute(blasr_cmd(query_fn=ref_fa_fn, target_fn=in_fa_fn, out_fn=reverse_m4_fn))
+    start, end = get_span_region_from_m4(forward_m4_fn, reverse_m4_fn)
+    if start is not None and end is not None:
+        substr_fasta(fileobj=Fastafile(in_fa_fn), chrom=read_name, start=start, end=end, o_fasta_fn=out_fa_fn)
     else: # otherwise, output is empty
         open(out_fa_fn, 'w').write('')
+
+
+def get_span_region_from_m4(forward_m4_fn, reverse_m4_fn):
+    fs, fe = _get_query_span_region_from_m4(forward_m4_fn)
+    rs, re = _get_target_span_region_from_m4(reverse_m4_fn)
+    def f(a, b, op):
+        if (a is None and b is None):
+            return None
+        elif a is None:
+            return b
+        elif b is None:
+            return a
+        else:
+            return op(a, b)
+    return f(fs, rs, min), f(fe, re, max)
+
+def _get_query_span_region_from_m4(m4_fn):
+    start, end = None, None
+    for r in BLASRM4Reader(m4_fn):
+        start = r.qStart if start is None else min(start, r.qStart)
+        end = r.qEnd if end is None else max(end, r.qEnd)
+    return start, end
+
+def _get_target_span_region_from_m4(m4_fn):
+    start, end = None, None
+    for r in BLASRM4Reader(m4_fn):
+        if r.sStrand == '+':
+            start = r.sStart if start is None else min(start, r.sStart)
+            end = r.sEnd if end is None else max(end, r.sEnd)
+        elif r.sStrand == '-':
+            start = (r.sLength-r.sEnd) if start is None else min(start, (r.sLength-r.sEnd)) # exclusive end to inclusive start
+            end = (r.sLength-r.sStart) if end is None else max(end, (r.sLength-r.sStart)) # inclusive start to exclusive end
+    return start, end
 
 
 def run(args):
@@ -265,10 +298,11 @@ def run(args):
     #convert subreads.bam to subread.fasta
     sr_fasta = get_fasta_fn_from_subreads_bam_fn(args.input_subreads_bam)
     op.exists(sr_fasta)
-    pbdagcon_wrapper(fasta_filename=sr_fasta, output_prefix=args.output_prefix, consensus_name=args.consensus_id, nproc=args.nproc, maxScore=args.maxScore, use_first_seq_if_fail=args.use_first_seq_if_fail)
+    pbdagcon_wrapper(fasta_filename=sr_fasta, output_prefix=args.output_prefix+'.all', consensus_name=args.consensus_id, nproc=args.nproc, maxScore=args.maxScore, use_first_seq_if_fail=args.use_first_seq_if_fail)
     if args.ref_fa:
-        write_best_mappable_substr(in_fa_fn=args.output_prefix+'.fasta', ref_fa_fn=args.ref_fa, out_fa_fn=args.output_prefix+'.spansv.fasta', read_name=args.consensus_id)
-    execute('mv %s %s' % (args.output_prefix+'.spansv.fasta', args.output_prefix+'.fasta'))
+        write_best_mappable_substr(in_fa_fn=args.output_prefix+'.all.fasta', ref_fa_fn=args.ref_fa, out_fa_fn=args.output_prefix+'.fasta', read_name=args.consensus_id)
+    else:
+        execute('ln %s %s' % (args.output_prefix+'.all.fasta', args.output_prefix+'.fasta'))
 
     try: # OK to fail indexing fasta, this may happen if fasta is empty
         make_fai(args.output_prefix+'.fasta')

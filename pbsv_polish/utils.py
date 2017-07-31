@@ -386,8 +386,10 @@ def write_reads_fasta(out_fa_fn, reads):
         for read in reads:
             writer.writeRecord(read.readName, read.read(aligned=False))
 
-def get_ref_extension_for_sv(bed_record):
+def get_ref_extension_for_sv(bed_record, ref_seq_len=None):
     """Get reference extension for structural variant"""
     s = max(0, bed_record.start - max(Constant.REFERENCE_EXTENSION_SV_FACTOR*bed_record.sv_len, Constant.REFERENCE_EXTENSION))
     e = bed_record.end + max(Constant.REFERENCE_EXTENSION_SV_FACTOR*bed_record.sv_len, Constant.REFERENCE_EXTENSION)
+    if ref_seq_len is not None:
+        e = min(e, ref_seq_len)
     return s, e

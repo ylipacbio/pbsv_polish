@@ -25,7 +25,7 @@ from .utils import substr_fasta
 def run(args):
     assert is_fasta(args.input_fa_fn) and is_fasta(args.output_fa_fn)
     fileobj = Fastafile(args.input_fa_fn)
-    substr_fasta(fileobj=fileobj, chrom=str(args.chrom), start=int(args.start), end=int(args.end), o_fasta_fn=args.output_fa_fn)
+    substr_fasta(fileobj=fileobj, chrom=str(args.chrom), start=int(args.start), end=int(args.end), out_fa_fn=args.output_fa_fn)
 
 def main():
     """main"""

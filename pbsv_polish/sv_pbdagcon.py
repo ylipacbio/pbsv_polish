@@ -206,6 +206,9 @@ def pbdagcon_wrapper(fasta_filename, output_prefix, consensus_name, nproc=8,
     return 0
 
 def make_fai(fn):
+    """Make FAI index file of a fasta file."""
+    assert ' ' not in fn
+    execute('rm -f %s' % (fn + '.fai'))
     execute('samtools faidx %s' % fn)
 
 def get_parser():
@@ -246,14 +249,14 @@ def get_fasta_fn_from_subreads_bam_fn(bam_fn):
 
 from .utils import blasr_cmd
 
-def get_substr_in_a_span_b(a_fa_obj, b_fa_obj, a_seq_name, work_dir):
+def get_region_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, work_dir):
     """
     a_fa_obj --- Fastafile a, which must contain sequence a_seq_name, and may contain other sequences
     b_fa_obj --- Fastafile b, which contains exactly one sequence
     a_seq_name -- name of a sequence which a_fa_obj must contain
     work_dir --- working directory for all intermediate files.
 
-    Return (chrom, start, end) of a substring which
+    Return (chrom, start, end) of a region which
         * is a substring of a_seq_name sequence of a_fa_obj, and
         * covers alignments that match the only sequence in b_fa_obj
     and return (a_seq_name, start, end).
@@ -331,20 +334,25 @@ def run(args):
     if ref_fa: # use reference fasta to bound substr
         in_fa_obj = Fastafile(in_fa_fn)
         assert_fasta_has_one_seq(in_fa_obj)
-        chrom, start, end = get_substr_in_a_span_b(a_fa_obj=in_fa_obj, b_fa_obj=Fastafile(ref_fa), a_seq_name=in_fa_obj.references[0], work_dir=op.dirname(output_prefix))
-        if start is not None and end is not None:
-            substr_fasta(fileobj=in_fa_obj, chrom=chrom, start=start, end=end, o_fasta_fn=out_fa_fn)
-        else: # otherwise, output is empty
-            open(out_fa_fn, 'w').write('')
+        make_substr_fasta_of_seq_in_a_match_b(a_fa_obj=in_fa_obj, b_fa_obj=Fastafile(ref_fa), a_seq_name=in_fa_obj.references[0], out_fa_fn=out_fa_fn)
     else:
         execute('ln %s %s' % (in_fa_fn, out_fa_fn))
 
     try: # OK to fail indexing fasta, this may happen if fasta is empty
-        execute('rm -f %s' % (out_fa_fn + '.fai'))
         make_fai(out_fa_fn)
     except Exception:
         pass
 
+def make_substr_fasta_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, out_fa_fn):
+    """
+    Get one substring of sequence a_seq_name in FASTA file a_fa_obj that match FASTA file b_fa_obj and write to out_fa_fn.
+    if no such substring is found, write an empty file to out_fa_fn.
+    """
+    chrom, start, end = get_region_of_seq_in_a_match_b(a_fa_obj=a_fa_obj, b_fa_obj=b_fa_obj, a_seq_name=a_seq_name, work_dir=op.dirname(out_fa_fn))
+    if start is not None and end is not None:
+        substr_fasta(fileobj=in_fa_obj, chrom=chrom, start=start, end=end, out_fa_fn=out_fa_fn)
+    else: # otherwise, output is empty
+        open(out_fa_fn, 'w').write('')
 
 def main():
     """main"""

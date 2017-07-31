@@ -36,7 +36,7 @@ def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj
         # make a substring spanning the expected structural variants
         #ref_start, ref_end = max(0, bed_record.start - Constant.REFERENCE_EXTENSION), bed_record.end + Constant.REFERENCE_EXTENSION
         ref_start, ref_end = get_ref_extension_for_sv(bed_record, reference_fasta_obj.lengths[reference_fasta_obj.references(bed_record.chrom)])
-        substr_fasta(fileobj=reference_fasta_obj, chrom=bed_record.chrom, start=ref_start, end=ref_end, o_fasta_fn=svp_files_obj.sv_ref_fa)
+        substr_fasta(fileobj=reference_fasta_obj, chrom=bed_record.chrom, start=ref_start, end=ref_end, out_fa_fn=svp_files_obj.sv_ref_fa)
 
     if make_subreads_bam:
         # get all raw subreads spanning the structural variants

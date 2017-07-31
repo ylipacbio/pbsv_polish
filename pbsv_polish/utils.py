@@ -154,20 +154,20 @@ class SVPolishFiles(object):
                                            cfg_fn=Constant.PBSV_POLISH_CFG, o_bam_fn=self.polish_ref_blasr_bam,
                                            o_bed_fn=self.polish_blasr_bed, algorithm='blasr')
 
-def write_fasta(o_fasta_fn, records):
-    """Write a list of fasta records [(name, seq), ...,  (name, seq)] to o_fasta_fn"""
-    with FastaWriter(o_fasta_fn) as w:
+def write_fasta(out_fa_fn, records):
+    """Write a list of fasta records [(name, seq), ...,  (name, seq)] to out_fa_fn"""
+    with FastaWriter(out_fa_fn) as w:
         for r in records:
             w.writeRecord(r[0], r[1])
 
-def substr_fasta(fileobj, chrom, start, end, o_fasta_fn):
-    """fetch a substring of reference fasta sequence and save to output fasta file o_fasta_fn"""
+def substr_fasta(fileobj, chrom, start, end, out_fa_fn):
+    """fetch a substring of reference fasta sequence and save to output fasta file out_fa_fn"""
     try:
         seq = fileobj.fetch(str(chrom), int(start), int(end))
     except Exception as e:
         raise ValueError("Could not get substring (%s, %s, %s) from %s" % (chrom, start, end, fileobj.filename))
     name = '%s__substr__%s_%s' % (chrom, start, end)
-    write_fasta(o_fasta_fn, [(name, seq)])
+    write_fasta(out_fa_fn, [(name, seq)])
 
 def get_aln_reader(aln_fn, bed_fn):
     # reader = get_aln_reader(aln_fn=aln_fn, bed_fn=bed_fn)

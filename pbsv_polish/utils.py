@@ -219,6 +219,8 @@ def sort_zmws_by_moive(zmws):
 def _get_subreads_ds_from_fn_or_obj(in_subreads_fn_or_obj):
     return SubreadSet(in_subreads_fn_or_obj) if isinstance(in_subreads_fn_or_obj, str) else in_subreads_fn_or_obj
 
+def get_fastafile_obj_from_fn_or_obj(in_fa_fn_or_or_obj):
+    return Fastafile(in_fa_fn_or_or_obj) if isinstance(in_fa_fn_or_or_obj, str) else in_fa_fn_or_or_obj
 
 def get_bam_header_from_subreads_ds(ds):
     """Return a BamHeader obj from a SubreadSet.
@@ -391,5 +393,30 @@ def get_ref_extension_for_sv(bed_record, ref_seq_len=None):
     s = max(0, bed_record.start - max(Constant.REFERENCE_EXTENSION_SV_FACTOR*bed_record.sv_len, Constant.REFERENCE_EXTENSION))
     e = bed_record.end + max(Constant.REFERENCE_EXTENSION_SV_FACTOR*bed_record.sv_len, Constant.REFERENCE_EXTENSION)
     if ref_seq_len is not None:
-        e = min(e, ref_seq_len)
+        e = min(e, int(ref_seq_len))
     return s, e
+
+def assert_fasta_has_one_seq(fasta_obj_or_fn):
+    obj = get_fastafile_obj_from_fn_or_obj(fasta_obj_or_fn)
+    if len(obj.references) != 1:
+        raise ValueError("FASTA file %s must contain exactly one sequence, while it contains: %s" % (obj.filename, '\n'.join(obj.references)))
+
+def apply_operator(a, b, op):
+    if (a is None and b is None):
+        return None
+    elif a is None:
+        return b
+    elif b is None:
+        return a
+    else:
+        return op(a, b)
+
+
+def prefix_of_fn(fn):
+    """Return base name prefix of a file path, e.g.,
+    ..doctest:
+        >>> prefix_of_fn('/home/my.b.txt')
+        "my.b"
+    """
+    basename = op.basename(fn)
+    return basename[0:basename.rfind('.')] if '.' in basename else basename

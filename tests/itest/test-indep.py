@@ -80,14 +80,16 @@ def test_pbsv_run_cmds():
     s = pbsv_run_and_transform_cmds('read.bam', 'ref.fa', PBSV_POLISH_CFG, 'o.bam', 'o.bed', 'ngmlr')
     assert s[0].startswith('pbsv align')
     assert s[1].startswith('pbsv call')
-    assert s[2].startswith('sv_transform_coordinate')
-    assert s[3].startswith('samtools sort')
+    assert s[2].startswith('rm -f ref.fa-enc.2.ngm ref.fa-ht-13-2.2.ngm')
+    assert s[3].startswith('sv_transform_coordinate')
+    assert s[4].startswith('samtools sort')
 
     s = pbsv_run_and_transform_cmds('read.bam', 'ref.fa', PBSV_POLISH_CFG, 'o.bam', 'o.bed', 'blasr')
     assert s[0].startswith('blasr')
     assert s[1].startswith('pbsv call')
-    assert s[2].startswith('sv_transform_coordinate')
-    assert s[3].startswith('samtools sort')
+    assert s[2].startswith('rm -f ref.fa-enc.2.ngm ref.fa-ht-13-2.2.ngm')
+    assert s[3].startswith('sv_transform_coordinate')
+    assert s[4].startswith('samtools sort')
 
 def test_SVPolishFiles():
     s = SVPolishFiles('dir')
@@ -134,3 +136,11 @@ def test_get_bam_header_from_subreads_ds():
 def test_Constant():
     assert op.exists(Constant.PBSV_POLISH_CFG)
 
+def test_apply_operator():
+    assert apply_operator(1, 2, min) == 1
+    assert apply_operator(None, None, max) is None
+    assert apply_operator(None, 1, max) is 1
+
+def test_prefix_of_fn():
+    assert prefix_of_fn('/home/my.b.txt') == 'my.b'
+    assert prefix_of_fn('my') == 'my'

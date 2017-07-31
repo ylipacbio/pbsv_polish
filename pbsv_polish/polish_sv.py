@@ -20,17 +20,6 @@ logging.getLogger().setLevel(logging.INFO)
 log = logging.getLogger()
 
 
-def make_diagnose_script_for_pbsv_run(o_dir):
-    diagnose_fn = op.join(o_dir, 'diagnose.sh')
-    cmd = """
-fastalen polished.fasta
-fastalen polished.hqlq.fasta
-blasr polished.fasta sv_reference_w_extension.fasta --header --maxMatch 15 -m 4
-blasr polished.hqlq.fasta sv_reference_w_extension.fasta --header --maxMatch 15 -m 4
-"""
-    with open(diagnose_fn, 'w') as w:
-        w.write(cmd)
-
 def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa, make_subreads_bam, make_scripts, execute_scripts, min_qv, use_sge):
     """
     Given a structural variant (as bed_record) and its supportive alignments, polish the given structural variant.

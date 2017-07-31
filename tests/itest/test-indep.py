@@ -141,6 +141,6 @@ def test_apply_operator():
     assert apply_operator(None, None, max) is None
     assert apply_operator(None, 1, max) is 1
 
-def test_prefix_of_fn():
-    assert prefix_of_fn('/home/my.b.txt') == 'my.b'
-    assert prefix_of_fn('my') == 'my'
+def test_basename_prefix_of_fn():
+    assert basename_prefix_of_fn('/home/my.b.txt') == 'my.b'
+    assert basename_prefix_of_fn('my') == 'my'

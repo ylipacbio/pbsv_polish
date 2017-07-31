@@ -412,10 +412,10 @@ def apply_operator(a, b, op):
         return op(a, b)
 
 
-def prefix_of_fn(fn):
+def basename_prefix_of_fn(fn):
     """Return base name prefix of a file path, e.g.,
     ..doctest:
-        >>> prefix_of_fn('/home/my.b.txt')
+        >>> basename_prefix_of_fn('/home/my.b.txt')
         "my.b"
     """
     basename = op.basename(fn)

@@ -267,8 +267,8 @@ def get_region_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, work_dir):
         raise ValueError("FASTA file %s does not contain sequence %s" % (a_fa_fn, a_seq_name))
     assert_fasta_has_one_seq(b_fa_obj)
     # call `blasr` to align a and b forward and backward (aka a to b and b to a).
-    a2b_m4_fn = op.join(work_dir, '%s.vs.%s.m4' % (prefix_of_fn(a_fa_fn), prefix_of_fn(b_fa_fn)))
-    b2a_m4_fn = op.join(work_dir, '%s.vs.%s.m4' % (prefix_of_fn(b_fa_fn), prefix_of_fn(a_fa_fn)))
+    a2b_m4_fn = op.join(work_dir, '%s.vs.%s.m4' % (basename_prefix_of_fn(a_fa_fn), basename_prefix_of_fn(b_fa_fn)))
+    b2a_m4_fn = op.join(work_dir, '%s.vs.%s.m4' % (basename_prefix_of_fn(b_fa_fn), basename_prefix_of_fn(a_fa_fn)))
     execute(blasr_cmd(query_fn=a_fa_fn, target_fn=b_fa_fn, out_fn=a2b_m4_fn))
     execute(blasr_cmd(query_fn=b_fa_fn, target_fn=a_fa_fn, out_fn=b2a_m4_fn))
     start, end = get_span_region_of_seq_from_m4(a2b_m4_fn=a2b_m4_fn, b2a_m4_fn=b2a_m4_fn, a_seq_name=a_seq_name)

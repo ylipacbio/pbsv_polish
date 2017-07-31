@@ -350,7 +350,7 @@ def make_substr_fasta_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, out_fa
     """
     chrom, start, end = get_region_of_seq_in_a_match_b(a_fa_obj=a_fa_obj, b_fa_obj=b_fa_obj, a_seq_name=a_seq_name, work_dir=op.dirname(out_fa_fn))
     if start is not None and end is not None:
-        substr_fasta(fileobj=in_fa_obj, chrom=chrom, start=start, end=end, out_fa_fn=out_fa_fn)
+        substr_fasta(fileobj=a_fa_obj, chrom=chrom, start=start, end=end, out_fa_fn=out_fa_fn)
     else: # otherwise, output is empty
         open(out_fa_fn, 'w').write('')
 

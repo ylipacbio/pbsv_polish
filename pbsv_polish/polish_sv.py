@@ -31,6 +31,13 @@ def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj
     zmws = get_query_zmws_from_alns(alns)
     svp_files_obj = SVPolishFiles(root_dir=work_dir, min_qv=min_qv)
     _mkdir(svp_files_obj.root_dir) # make a subdirectory (e.g., chrI_0_100_Deletion_-100) for all polishing files
+    if len(srs) < Constant.MIN_POLISH_COVERAGE):
+        log.warning("Skipping structural variant %s for not having enough coverage!" % (bed2prefix(bed_record)))
+        return
+
+    if not bed_record.fmt.is_homozygous:
+        log.warning("Skipping heterozygous structural variant %s!" % (bed2prefix(bed_record)))
+        return
 
     if make_reference_fa:
         # make a substring spanning the expected structural variants

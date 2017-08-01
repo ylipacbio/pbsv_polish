@@ -32,6 +32,7 @@ class Constant(object):
     REFERENCE_EXTENSION = 1000
     REFERENCE_EXTENSION_SV_FACTOR = 2
     MIN_POLISH_QV = 20
+    MIN_POLISH_COVERAGE = 5
     BLASR_NPROC = 4
     VARIANT_CALLER_NPROC = 4
 
@@ -196,7 +197,11 @@ def get_alns_within_ref_region(alnfile_obj, ref_region):
 
 def zmw_from_subread(subread):
     """Given a subread 'movie/zmw/start_end', return 'movie/zmw'"""
-    return '/'.join(subread.split('/')[0:2])
+    try:
+        return '/'.join(subread.split('/')[0:2])
+    except Exception as e:
+        raise ValueError("Could not convert read %s to zmw" % name)
+
 
 def get_query_zmws_from_alns(alns):
     """Given a list of alignments, return a list of non-redundant query zmws"""
@@ -206,7 +211,7 @@ def get_query_subreads_from_alns(alns):
     """Given a list of alignments, return a list of non-redundant query subreads"""
     return list(set([aln.query_name for aln in alns]))
 
-from svkits.utils import get_movie2zmws_from_zmws, make_subreads_bam, make_subreads_bam_using_pbcore, get_movie_and_zmw_from_name
+from svkits.utils import get_movie2zmws_from_zmws, make_subreads_bam, get_movie_and_zmw_from_name
 
 def make_subreads_bam_of_zmws(movie2bams, zmws, out_prefix, dry_run=False):
     movie2zmws = get_movie2zmws_from_zmws(zmws)

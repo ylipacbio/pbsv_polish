@@ -3,11 +3,9 @@
 from argparse import ArgumentParser
 import os.path as op
 import sys
-import logging
-from pbcore.io import DataSet, FastaWriter
+from pbcore.io import FastaWriter
 
 from pbsv.independent.utils import realpath
-from pbsv.ngmlrmap import make_fai_cmd
 from pbsv.cli import _mkdir
 from pbsv.io.bamstream import SingleFileOpener
 from .independent import Constants as C
@@ -58,6 +56,8 @@ def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj
     if execute_scripts:
         svp_files_obj.execute_all_scripts(use_sge=use_sge)
 
+    svp_files_obj.make_readme()
+
 
 def run(args):
     in_dir, out_dir = args.in_dir, args.out_dir
@@ -73,7 +73,7 @@ def run(args):
     ofile_obj = open(coverage_fn, 'w')
     alnfile_obj = SingleFileOpener(aln_fn).alignfile
     subreads_ds_obj = SubreadSet(subreads_xml_fn)
-    bedreader_obj = BedReader(bed_fn)
+    bedreader_obj = get_sv_from_non_pbsv_bed(bed_fn)
 
     for bed_record, alns in yield_alns_from_bed_file(alnfile_obj, bedreader_obj=bedreader_obj):
         ofile_obj.write('%s\t%s\n' % (len(get_query_subreads_from_alns(alns)), bed_record))  # write coverage info

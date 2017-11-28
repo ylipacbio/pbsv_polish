@@ -18,10 +18,9 @@ from argparse import ArgumentParser
 import os.path as op
 import sys
 import logging
-from pbcore.io import DataSet, FastaWriter
+from pbcore.io import FastaWriter
 
-from pbsv.independent.utils import execute, realpath, execute_as_bash
-from pbsv.ngmlrmap import make_fai_cmd
+from pbsv.independent.utils import execute, realpath
 from pbsv.cli import _mkdir
 from pbsv.io.VcfIO import BedReader
 

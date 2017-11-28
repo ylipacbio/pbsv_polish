@@ -4,14 +4,13 @@ import os.path as op
 from collections import defaultdict
 import numpy as np
 
-from pbcore.io import DataSet, FastaWriter, SubreadSet
-
+from pbcore.io import FastaWriter, SubreadSet
 from pbsv.libs import Fastafile, AlignmentFile
-from pbsv.io.bamstream import BamStream, iterator_of_alignments_in_ref_regions
+from pbsv.io.bamstream import iterator_of_alignments_in_ref_regions
 from pbsv.io.VcfIO import BedReader, BedRecord
 from pbsv.independent.common import RefRegion, SvType, SvFmts, SvFmt
 from pbsv.independent.utils import _is_fmt, cmds_to_bash, execute, realpath, mv_cmd, autofmt, is_fasta
-from pbsv.run import svcall_cmd, ngmlrmap_cmd
+from pbsv.run import svcall_cmd
 from .independent import Constants as C
 
 import logging
@@ -52,12 +51,6 @@ def substr_fasta(fileobj, chrom, start, end, out_fa_fn):
     write_fasta(out_fa_fn, [(name, seq)])
 
 
-def get_aln_reader(aln_fn, bed_fn):
-    ref_regions = get_ref_regions_from_bed_file(bed_fn)
-    reader = BamStream(fn=aln_fn, ref_regions=ref_regions, require_sorted=True)
-    return reader
-
-
 def yield_alns_from_bed_file(alnfile_obj, bedreader_obj):
     for bed_record in bedreader_obj:
         ref_region = to_ref_region(bed_record)
@@ -66,15 +59,6 @@ def yield_alns_from_bed_file(alnfile_obj, bedreader_obj):
 
 def to_ref_region(bed_record):
     return RefRegion(bed_record.chrom, bed_record.start, bed_record.end + 1)
-
-
-def get_ref_regions_from_bed_file(bed_fn):
-    return [to_ref_region(bed_r) for bed_r in BedReader(bed_fn)]
-
-
-def yield_ref_region_from_bed_file(bed_fn):
-    for bed_r in BedReader(bed_fn):
-        yield to_ref_region(bed_r)
 
 
 def get_alns_within_ref_region(alnfile_obj, ref_region):
@@ -183,28 +167,6 @@ def subreads_of_a_zmw_in_ds(subreads_ds, zmw):
     rows = np.nonzero(np.logical_and(subreads_ds.index.qId == subreads_ds.movieIds[movie], subreads_ds.index.holeNumber == zmw_int))[
         0]  # pylint: disable=no-member
     return subreads_ds[rows]
-
-
-def get_subreads_bam_files_from_xml(in_subreads_xml):
-    return [fn for fn in DataSet(in_subreads_xml).toExternalFiles() if fn.endswith('subreads.bam')]
-
-
-def get_movies2bams_from_subreads_xml(in_subreads_xml):
-    subreads_fns = get_subreads_bam_files_from_xml(in_subreads_xml)
-    return get_movies2bams_from_subreads_bam_files(subreads_fns)
-
-
-def get_movies2bams_from_subreads_bam_files(subreads_bam_fns):
-    """Input: a list of subreads.bam files.
-       Return {movie: bam_fn}
-    """
-    movie2bams = defaultdict(lambda: set())
-    for fn in subreads_bam_fns:
-        movie = fn.split('/')[-1].split('.')[0]
-        if movie in movie2bams and not fn == movie2bams[movie]:
-            raise ValueError("Movie %s mapping to multiple bam files %r and %r" % (movie, movie2bams[movie], fn))
-        movie2bams[movie].add(fn)
-    return movie2bams
 
 
 def bed2prefix(bed_record):

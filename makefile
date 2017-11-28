@@ -22,5 +22,7 @@ test:
 autofmt:
 	find pbsv_polish -type f -name '*.py' | xargs autoflake --in-place --remove-unused-variables
 	find pbsv_polish -type f -name '*.py' | xargs autopep8  --in-place --max-line-length 120
+vulture:
+	vulture pbsv_polish/
 clean:
 	find . -type f -name '*.pyc' |xargs rm -f

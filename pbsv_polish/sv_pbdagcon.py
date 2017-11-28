@@ -15,12 +15,11 @@ import sys
 import numpy as np
 
 from pbcore.util.Process import backticks
-from pbcore.io import DataSet, FastaReader, FastaWriter
-from pbsv.ngmlrmap import ln_cmd
+from pbcore.io import FastaReader, FastaWriter
 from pbsv.independent.utils import execute, realpath
 from pbsv.cli import _mkdir
-from pbsv.io.bamstream import BamStream, SingleFileOpener
-from pbsv.libs import AlignmentFile, AlignedSegment, Fastafile
+from pbsv.io.bamstream import SingleFileOpener
+from pbsv.libs import AlignmentFile, Fastafile
 
 from pbtranscript.io import FastaRandomReader, BLASRM4Reader
 from pbsv.__init__ import get_version
@@ -48,7 +47,7 @@ def choose_template_by_blasr(fasta_filename, out_filename, nproc=8,
           "--out {out} ".format(out=out_filename) + \
           "1>/dev/null 2>/dev/null"
 
-    out, code, msg = backticks(cmd)
+    out, code, _ = backticks(cmd)
     if code != 0:
         return None
 
@@ -133,7 +132,7 @@ def make_aln_input_to_ref(fasta_filename, ref_filename,
           "-m 5 --out {out} ".format(out=tmp_out) + \
           "1>/dev/null 2>/dev/null"
 
-    out, code, msg = backticks(cmd)
+    out, code, _ = backticks(cmd)
     if code != 0:
         errMsg = "Unable to align {infa} to {ref} in make_aln_input_to_ref".\
             format(infa=fasta_filename, ref=ref_filename)
@@ -188,7 +187,7 @@ def pbdagcon_wrapper(fasta_filename, output_prefix, consensus_name, nproc=8,
             minlen=min_seq_len, nproc=nproc, aln=aln_filename,
             out=tmp_cons_filename)
         cmd += " 2>/dev/null"
-        out, code, msg = backticks(cmd)
+        out, code, _ = backticks(cmd)
         if code != 0:
             raise AlignGraphUtilError("Cannot run command: %s" % cmd)
 
@@ -240,20 +239,6 @@ def get_parser():
                         help="Use reference fasta to bound consensus sequence and remove unmappablei edges")
     parser.add_argument("--version", "-v", action='version', version='%(prog)s ' + get_version())
     return parser
-
-
-def restore_args_with_whitespace(x):
-    """Restore args with whitespace, to support file paths with whitespace"""
-    y = []
-    for xi in x:
-        if len(y) == 0:
-            y.append(xi)
-        else:
-            if y[-1].endswith('\\'):
-                y[-1] = y[-1][0:-1] + ' ' + xi
-            else:
-                y.append(xi)
-    return y
 
 
 def get_fasta_fn_from_subreads_bam_fn(bam_fn):

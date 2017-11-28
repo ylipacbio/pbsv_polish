@@ -19,3 +19,5 @@ indep:
 test:
 	# Relatively fast tests
 	py.test ${MY_NOSE_FLAGS} tests/itest/test_*.py
+clean:
+	find . -type f -name '*.pyc' |xargs rm -f

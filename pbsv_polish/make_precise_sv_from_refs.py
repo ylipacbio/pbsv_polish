@@ -22,11 +22,14 @@ import logging
 from collections import defaultdict
 from pbcore.io import DataSet, FastaWriter
 
-from pbsv.independent.utils import execute, realpath, write_to_bash_file, execute_as_bash
+from pbsv.independent.utils import execute, realpath, execute_as_bash
 from pbsv.ngmlrmap import make_fai_cmd
 from pbsv.cli import _mkdir
+from pbsv.io.VcfIO import BedReader
 
-from .utils import *
+from .independent import Constants as C
+from .io import SVPolishFiles
+from .utils import write_to_bash_file,get_query_subreads_from_alns, get_query_zmws_from_alns, bed2prefix, substr_fasta, basename_prefix_of_fn, get_ref_extension_for_sv, make_subreads_bam_of_zmws2, pbsv_run_and_transform_cmds
 from pbsv.libs import Fastafile
 from .sv_pbdagcon import get_region_of_seq_in_a_match_b
 
@@ -36,7 +39,7 @@ logging.getLogger().setLevel(logging.INFO)
 log = logging.getLogger()
 
 
-def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa, make_subreads_bam, make_scripts, execute_scripts, min_qv, use_sge):
+def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa, make_subreads_bam, make_scripts, execute_scripts, min_qv, ref_ext_len, use_sge):
     """
     Given a structural variant (as bed_record) and its supportive alignments, polish the given structural variant.
     * if make_reference_fa is True, generate a substr of chromosome as reference for this structural variant
@@ -48,12 +51,12 @@ def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj,
 
     sv_prefix = bed2prefix(bed_record)
     data_dir = realpath(op.join(out_dir, sv_prefix))
-    svp_files_obj = SVPolishFiles(root_dir=data_dir, min_qv=min_qv)
+    svp_files_obj = SVPolishFiles(root_dir=data_dir, min_qv=min_qv, ref_ext_len=ref_ext_len)
     _mkdir(svp_files_obj.root_dir) # make a subdirectory (e.g., chrI_0_100_Deletion_-100) for all polishing files
 
     if make_reference_fa:
         # make a substring spanning the expected structural variants
-        #ref_start, ref_end = max(0, bed_record.start - Constant.REFERENCE_EXTENSION), bed_record.end + Constant.REFERENCE_EXTENSION
+        #ref_start, ref_end = max(0, bed_record.start - C.REFERENCE_EXTENSION), bed_record.end + C.REFERENCE_EXTENSION
         ref_start, ref_end = get_ref_extension_for_sv(bed_record)
         substr_fasta(fileobj=reference_fasta_obj, chrom=bed_record.chrom, start=ref_start, end=ref_end, out_fa_fn=svp_files_obj.sv_ref_fa)
 
@@ -104,28 +107,28 @@ def make_precise_sv(ref_a_obj, ref_b_obj, bed_record, b2a_names, work_dir):
     # call `pbsv run` to call structural variants
     o_prefix = op.join(work_dir, '%s.%s' % (basename_prefix_of_fn(substr_a_fn), basename_prefix_of_fn(substr_b_fn)))
     o_bam_fn, o_bed_fn, o_sh_fn = o_prefix + '.chained.bam', o_prefix + '.bed', o_prefix + '.pbsv_run.sh'
-    cmds = pbsv_run_and_transform_cmds(reads_fn=substr_a_fn, ref_fa_fn=substr_b_fn, cfg_fn=Constant.PBSV_POLISH_CFG, o_bam_fn=o_bam_fn, o_bed_fn=o_bed_fn, algorithm='ngmlr')
-    write_to_bash_file(cmds=cmds, fn=o_sh_fn)
+    cmds = pbsv_run_and_transform_cmds(reads_fn=substr_a_fn, ref_fa_fn=substr_b_fn, cfg_fn=C.PBSV_POLISH_CFG, o_bam_fn=o_bam_fn, o_bed_fn=o_bed_fn, algorithm='ngmlr')
+    write_to_bash_file(cmds=cmds, bash_sh_fn=o_sh_fn)
 
 
 def run(args):
     ref_a_fn, ref_b_fn, in_bed_fn, b2a_names_json_fn, out_dir, = args.ref_a_fn, args.ref_b_fn, args.in_bed_fn, args.b2a_names_json_fn, args.out_dir
     _mkdir(out_dir)
 
-    from svkits.miscio import BedReader
-    bedreader_obj = BedReader(in_bed_fn)
+    # bed_objs = get_sv_from_non_pbsv_bed(in_bed_fn)
+    bed_reader = BedReader(in_bed_fn)
     ref_a_obj = Fastafile(ref_a_fn)
     ref_b_obj = Fastafile(ref_b_fn)
     b2a_names = get_dict_from_json(open(b2a_names_json_fn, 'r'))
 
-    for bed_record in bedreader_obj:
+    for bed_record in bed_reader:
         sv_prefix = bed2prefix(bed_record)
         data_dir = realpath(op.join(out_dir, sv_prefix))
         log.info("Processing sv %s" % sv_prefix)
         print("Processing sv %s" % sv_prefix)
         make_precise_sv(ref_a_obj, ref_b_obj, bed_record, b2a_names, data_dir)
 
-    bedreader_obj.close()
+    bed_reader.close()
     ref_a_obj.close()
     ref_b_obj.close()
 

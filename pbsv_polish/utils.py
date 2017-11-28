@@ -9,12 +9,12 @@ import numpy as np
 from pbcore.io import DataSet, FastaWriter, SubreadSet
 
 from pbsv.libs import Fastafile, AlignmentFile
-from pbsv.io.linefile import X2PysamReader, iter_within_ref_regions
-from pbsv.io.VcfIO import BedReader
-from pbsv.independent.common import RefRegion
-from pbsv.independent.utils import execute, realpath, write_to_bash_file, execute_as_bash, mv_cmd, autofmt, is_fasta, is_fastq
+from pbsv.io.bamstream import BamStream, iterator_of_alignments_in_ref_regions
+from pbsv.io.VcfIO import BedReader, BedRecord
+from pbsv.independent.common import RefRegion, SvType, SvFmts, SvFmt
+from pbsv.independent.utils import _is_fmt, cmds_to_bash, execute, realpath, mv_cmd, autofmt, is_fasta
 from pbsv.run import svcall_cmd, ngmlrmap_cmd
-from .__init__ import __file__
+from .independent import Constants as C
 
 import logging
 logging.basicConfig()
@@ -22,138 +22,19 @@ logging.getLogger().setLevel(logging.INFO)
 log = logging.getLogger()
 
 
-def f(strs):
-    return '.'.join(strs)
-
-#in_dir = 'in_sl_1813_yeast_10fold'
-
-class Constant(object):
-    PBSV_POLISH_CFG = op.join(op.dirname(__file__), 'data', 'pbsv.polish.cfg')
-    REFERENCE_EXTENSION = 1000
-    REFERENCE_EXTENSION_SV_FACTOR = 2
-    MIN_POLISH_QV = 20
-    MIN_POLISH_COVERAGE = 5
-    BLASR_NPROC = 4
-    VARIANT_CALLER_NPROC = 4
+def get_movie_and_zmw_from_name(name):
+    """Given a string of pacbio zmw name or read name, return movie and zmw"""
+    try:
+        fs = name.strip().split(' ')[0].split('/')
+        movie, zmw = fs[0], fs[1]
+        return movie, int(zmw)
+    except ValueError:
+        raise ValueError("Read %r is not a PacBio read." % name)
 
 
-class SVInputFiles(object):
-    def __init__(self, root_dir):
-        def g(fn):
-            return op.join(self.root_dir, fn)
-        self.root_dir = root_dir
-        self.aln_bam = g('alignments.bam')
-        self.subreads_xml = g("subreads.xml")
-        self.genome_fa = g("genome.fa")
-        self.sv_bed = g('structural_variants.bed')
-
-class SVPolishFiles(object):
-    def __init__(self, root_dir, min_qv=Constant.MIN_POLISH_QV, ref_ext_len=Constant.REFERENCE_EXTENSION):
-        """root_dir is a directory containing all files for sv polishing."""
-        def g(fn):
-            return op.join(self.root_dir, fn)
-
-        self.root_dir = root_dir
-        self.min_qv = min_qv
-        self.ref_ext_len = ref_ext_len
-
-        self.subreads_consensus_sh = g('subreads_consensus.sh')
-        self.readme = g('README')
-
-        self._subreads_prefix = g('sr')
-        self.subreads_bam = f([self._subreads_prefix, 'subreads.bam'])
-        self.subreads_fa = f([self._subreads_prefix, 'subreads.fasta'])
-        #self.subreads_blasr_bam = f([self._subreads_prefix, 'blasr', 'bam'])
-
-        self._dagcon_prefix = g('sv_pbdagcon')
-        self.dagcon_fa = f([self._dagcon_prefix, 'fasta'])
-
-        #self._sv_ref_prefix = g('sv_ref_w_ext_%s' % self.ref_ext_len)
-        self._sv_ref_prefix = g('sv_ref_w_ext')
-        self.sv_ref_fa = f([self._sv_ref_prefix, 'fasta'])
-
-        self.sr_dagcon_blasr_bam = g('sr.sv_pbdagcon.blasr.bam')
-
-        self._polish_prefix = g('polish.qv%s' % self.min_qv)
-        self.polish_fa = f([self._polish_prefix, 'fasta'])
-        self.polish_fq = f([self._polish_prefix, 'fastq'])
-        self.polish_blasr_bed = f([self._polish_prefix, 'blasr', 'bed'])
-        self.polish_blasr_sh = f([self._polish_prefix, 'blasr', 'sh'])
-        self.polish_ref_blasr_bam = f([self._polish_prefix, 'ref', 'blasr', 'bam'])
-
-        self.polish_ngmlr_bed = f([self._polish_prefix, 'ngmlr', 'bed'])
-        self.polish_ngmlr_sh = f([self._polish_prefix, 'ngmlr', 'sh'])
-        self.polish_ref_ngmlr_bam = f([self._polish_prefix, 'ref', 'ngmlr', 'bam'])
-
-        self._polish_hqlq_prefix = g('polish.hqlq')
-        self.polish_hqlq_fa = f([self._polish_hqlq_prefix, 'fasta'])
-        self.polish_hqlq_fq = f([self._polish_hqlq_prefix, 'fastq'])
-
-        self.run_sh = g('run.sh')
-
-    def make_readme(self):
-        """Write all files to readme"""
-        with open(self.readme, 'w') as writer:
-            writer.write('\n'.join([self.polish_blasr_sh, self.polish_ngmlr_sh, self.subreads_consensus_sh]))
-
-    @property
-    def scripts(self):
-        return [self.subreads_consensus_sh, self.polish_ngmlr_sh, self.polish_blasr_sh]
-
-    def make_all_scripts(self):
-        self.make_polish_ngmlr_script()
-        self.make_polish_blasr_script()
-        self.make_subreads_consensus_script()
-        write_to_bash_file(cmds=self.scripts, fn=self.run_sh)
-        for sh_fn in self.scripts + [self.run_sh]:
-            execute('chmod +x %s' % sh_fn)
-
-    def execute_all_scripts(self, use_sge):
-        try:
-            qsub_to_sge_or_run_local(script_fn=self.run_sh, use_sge=use_sge)
-        except Exception:
-            print 'FAILED TO POLISH SV %s' % self.root_dir
-
-    def make_polish_ngmlr_script(self):
-        write_to_bash_file(cmds=self.polish_ngmlr_cmds, fn=self.polish_ngmlr_sh)
-
-    def make_polish_blasr_script(self):
-        write_to_bash_file(cmds=self.polish_blasr_cmds, fn=self.polish_blasr_sh)
-
-    def make_subreads_consensus_script(self):
-        write_to_bash_file(cmds=self.subreads_consensus_cmds, fn=self.subreads_consensus_sh)
-
-    @property
-    def subreads_consensus_cmds(self): #subreads_bam, svp_files_obj, sv_prefix, min_qv=20, nproc=16):
-        """Return a list of cmds used to make consensus sequence of subreads_bam.
-        sv_prefix -- a prefix string from a BedRecord obj, e.g., chr1_0_100_Deletion_-100
-        """
-        align_bam = self.sr_dagcon_blasr_bam
-        # c0 will generate sv_pbdagcon output consensus sequence of subreads with fai
-        c0 = sv_pbdagcon_cmd(self.subreads_bam, self._dagcon_prefix, 'subreads_consensus', self.sv_ref_fa)
-        c1 = blasr_cmd(query_fn=self.subreads_bam, target_fn=self.dagcon_fa, out_fn=align_bam, nproc=Constant.BLASR_NPROC)
-        c2 = sort_index_bam_inline_cmd(align_bam)
-        c3 = pbindex_cmd(align_bam)
-        c4 = variant_caller_cmd(align_bam=align_bam, ref_fa=self.dagcon_fa,
-                                out_fa=self.polish_hqlq_fa, out_fq=self.polish_hqlq_fq, nproc=Constant.VARIANT_CALLER_NPROC)
-        c5 = trim_lq_cmd(in_fq=self.polish_hqlq_fq, min_qv=self.min_qv, out_fq=self.polish_fq, out_fa=self.polish_fa)
-        return [c0, c1, c2, c3, c4, c5]
-
-    @property
-    def polish_ngmlr_cmds(self):
-        """A list of shell commands to ngmlr align polished sequence to a substring of chromosome, call
-        structural variants, and transform coordinate back to the original chromosome"""
-        return pbsv_run_and_transform_cmds(reads_fn=self.polish_fa, ref_fa_fn=self.sv_ref_fa,
-                                           cfg_fn=Constant.PBSV_POLISH_CFG, o_bam_fn=self.polish_ref_ngmlr_bam,
-                                           o_bed_fn=self.polish_ngmlr_bed, algorithm='ngmlr')
-
-    @property
-    def polish_blasr_cmds(self):
-        """A list of shell commands to blasr align polished sequence to a substring of chromosome, call
-        structural variants, and transform coordinate back to the original chromosome"""
-        return pbsv_run_and_transform_cmds(reads_fn=self.polish_fa, ref_fa_fn=self.sv_ref_fa,
-                                           cfg_fn=Constant.PBSV_POLISH_CFG, o_bam_fn=self.polish_ref_blasr_bam,
-                                           o_bed_fn=self.polish_blasr_bed, algorithm='blasr')
+def is_fastq(fn):
+    """Return true if a file extension is fq or fastq"""
+    return _is_fmt(fn, ["fq", "fastq"])
 
 def write_fasta(out_fa_fn, records):
     """Write a list of fasta records [(name, seq), ...,  (name, seq)] to out_fa_fn"""
@@ -170,10 +51,10 @@ def substr_fasta(fileobj, chrom, start, end, out_fa_fn):
     name = '%s__substr__%s_%s' % (chrom, start, end)
     write_fasta(out_fa_fn, [(name, seq)])
 
+
 def get_aln_reader(aln_fn, bed_fn):
-    # reader = get_aln_reader(aln_fn=aln_fn, bed_fn=bed_fn)
     ref_regions = get_ref_regions_from_bed_file(bed_fn)
-    reader = X2PysamReader(aln_fn, ref_regions)
+    reader = BamStream(fn=aln_fn, ref_regions=ref_regions, require_sorted=True)
     return reader
 
 def yield_alns_from_bed_file(alnfile_obj, bedreader_obj):
@@ -193,15 +74,19 @@ def yield_ref_region_from_bed_file(bed_fn):
 
 def get_alns_within_ref_region(alnfile_obj, ref_region):
     """Return a list of alignments within a ref region."""
-    return [aln for aln in iter_within_ref_regions(alnfile_obj, [ref_region])]
+    return [aln for aln in iterator_of_alignments_in_ref_regions(alnfile_obj, [ref_region])]
 
 def zmw_from_subread(subread):
     """Given a subread 'movie/zmw/start_end', return 'movie/zmw'"""
     try:
         return '/'.join(subread.split('/')[0:2])
     except Exception as e:
-        raise ValueError("Could not convert read %s to zmw" % name)
+        raise ValueError("Could not convert read %s to zmw" % subread)
 
+def write_to_bash_file(cmds, bash_sh_fn, write_mode='w'):
+    """Write commands to a bash script."""
+    with open(bash_sh_fn, write_mode) as writer:
+        writer.write(cmds_to_bash(cmds) + '\n')
 
 def get_query_zmws_from_alns(alns):
     """Given a list of alignments, return a list of non-redundant query zmws"""
@@ -211,11 +96,6 @@ def get_query_subreads_from_alns(alns):
     """Given a list of alignments, return a list of non-redundant query subreads"""
     return list(set([aln.query_name for aln in alns]))
 
-from svkits.utils import get_movie2zmws_from_zmws, make_subreads_bam, get_movie_and_zmw_from_name
-
-def make_subreads_bam_of_zmws(movie2bams, zmws, out_prefix, dry_run=False):
-    movie2zmws = get_movie2zmws_from_zmws(zmws)
-    return make_subreads_bam(movie2zmws, movie2bams, out_prefix, dry_run=dry_run)
 
 def sort_zmws_by_moive(zmws):
     """ sort a list of zmws by moive names."""
@@ -395,8 +275,8 @@ def write_reads_fasta(out_fa_fn, reads):
 
 def get_ref_extension_for_sv(bed_record, ref_seq_len=None):
     """Get reference extension for structural variant"""
-    s = max(0, bed_record.start - max(Constant.REFERENCE_EXTENSION_SV_FACTOR*bed_record.sv_len, Constant.REFERENCE_EXTENSION))
-    e = bed_record.end + max(Constant.REFERENCE_EXTENSION_SV_FACTOR*bed_record.sv_len, Constant.REFERENCE_EXTENSION)
+    s = max(0, bed_record.start - max(C.REFERENCE_EXTENSION_SV_FACTOR*bed_record.sv_len, C.REFERENCE_EXTENSION))
+    e = bed_record.end + max(C.REFERENCE_EXTENSION_SV_FACTOR*bed_record.sv_len, C.REFERENCE_EXTENSION)
     if ref_seq_len is not None:
         e = min(e, int(ref_seq_len))
     return s, e
@@ -425,3 +305,24 @@ def basename_prefix_of_fn(fn):
     """
     basename = op.basename(fn)
     return basename[0:basename.rfind('.')] if '.' in basename else basename
+
+
+def get_sv_from_non_pbsv_bed(in_bed):
+    """Read in_bed which has a different format from pbsv BED as if it is a pbsv BED.
+    Return a list of BedRecord objects.
+    Example of in_bed:
+    chr1\t1000\t1000\tInsertion\t100\t.\t.\t.
+    Each line must contain at least five columns: chromsome, start, end, svtype, svlen
+    """
+    ret = []
+    for idx, line in enumerate(open(in_bed, 'r')):
+        fs = line.strip().split('\t')
+        try:
+            chr, start, end, svtype, svlen = fs[0], int(fs[1]), int(fs[2]), fs[3], int(fs[4])
+            if SvType(svtype).is_Deletion:
+                svlen = -abs(svlen)
+        except:
+            raise AssertionError('True set BED line {idx} must contain at least five columns, (chr, start, end, type, len),          line={line}'.format(idx=idx, line=line))
+        fmts = SvFmts([SvFmt.fromString('0/0:1:1')], ['SAMPLE'])
+        ret.append(BedRecord(chrom=chr, start=start, end=end, sv_id='.', sv_type=svtype, sv_len=svlen, alt=None, annotations=None,   fmts=fmts))
+    return ret

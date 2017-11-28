@@ -20,7 +20,7 @@ from pbcore.io import DataSet, FastaReader, FastaWriter
 from pbsv.ngmlrmap import ln_cmd
 from pbsv.independent.utils import execute, realpath
 from pbsv.cli import _mkdir
-from pbsv.io.linefile import X2PysamReader
+from pbsv.io.bamstream import BamStream, SingleFileOpener
 from pbsv.libs import AlignmentFile, AlignedSegment, Fastafile
 
 from pbtranscript.io import FastaRandomReader, BLASRM4Reader
@@ -68,7 +68,9 @@ def choose_template_by_blasr(fasta_filename, out_filename, nproc=8,
             qID, tID = raw[0][:raw[0].rfind('/')], raw[1]
             if qID == tID:
                 continue  # self-hit, ignore
-            scores[qID].append(float(raw[4]))  # use score
+            #scores[qID].append(float(raw[4]))  # use score
+            scores[qID].append(float(raw[5])/100.0 * (int(raw[10])-int(raw[9])))  # use similarity * aligned query length
+
 
     # find the one with the highest average alignment similarity
     #score_array = []
@@ -94,10 +96,23 @@ def choose_template_by_blasr(fasta_filename, out_filename, nproc=8,
     #    if _len > best_len:
     #        best_id = _id
     #        best_len = _len
+    def get_sr_per_zmw(fasta_filename):
+        """Given a subreads fasta file, return number of subreads in each zmw"""
+        sr_per_zmw = defaultdict(0)
+        from pbsv.libs import Fastafile
+        from .utils import zmw_from_subread
+        obj = Fastafile(fasta_filename)
+        for name in obj.references():
+            sr_per_zmw[zmw_from_subread(name)] += 1
+        return sr_per_zmw
+
+    sr_per_zmw = get_sr_per_zmw(fasta_filename)
     best_id, best_score = None, 0
     for k, v in scores.iteritems():
+        n_sr = sr_per_zmw[zmw_from_subread(k)]
         this_score = sum(v)
-        if this_score < best_score: # blasr score the less the better
+        #if this_score < best_score: # blasr score the less the better
+        if this_score > best_score: # similarity * aligned length, the larger the better
             best_id = k
             best_score = this_score
 
@@ -239,8 +254,11 @@ def restore_args_with_whitespace(x):
     return y
 
 def get_fasta_fn_from_subreads_bam_fn(bam_fn):
+    """
+    Given a bam file `*.bam`, write record to fasta in the same directory as `*.subreads.fasta`
+    """
     fasta_fn = op.join(op.dirname(bam_fn), op.basename(bam_fn).split('.')[0] + '.subreads.fasta')
-    alnfile = X2PysamReader(bam_fn)._alignment_file
+    alnfile = SingleFileOpener(fn=bam_fn).alignfile
     writer = FastaWriter(fasta_fn)
     for aln in alnfile:
         writer.writeRecord(aln.query_name, aln.query_sequence)

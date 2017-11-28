@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os.path as op
 
+
 class Constants(object):
     PBSV_POLISH_CFG = op.join(op.dirname(op.dirname(__file__)), 'data', 'pbsv.polish.cfg')
     REFERENCE_EXTENSION = 1000

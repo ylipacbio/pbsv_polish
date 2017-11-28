@@ -66,28 +66,28 @@ def choose_template_by_blasr(fasta_filename, out_filename, nproc=8,
             qID, tID = raw[0][:raw[0].rfind('/')], raw[1]
             if qID == tID:
                 continue  # self-hit, ignore
-            #scores[qID].append(float(raw[4]))  # use score
-            scores[qID].append(float(raw[5])/100.0 * (int(raw[10])-int(raw[9])))  # use similarity * aligned query length
-
+            # scores[qID].append(float(raw[4]))  # use score
+            scores[qID].append(float(raw[5]) / 100.0 * (int(raw[10]) - int(raw[9]))
+                               )  # use similarity * aligned query length
 
     # find the one with the highest average alignment similarity
     #score_array = []
-    #for k, v in scores.iteritems():
+    # for k, v in scores.iteritems():
     #     score_array.append((np.ceil(np.mean(v)), k))
 
-    #if len(score_array) < min_number_reads:
+    # if len(score_array) < min_number_reads:
     if len(scores) < min_number_reads:
         errMsg = "Not enough number of reads in " + \
                  "choose_template_by_blasr {0} < {1}".format(
                      len(scores), min_number_reads)
         raise AlignGraphUtilError(errMsg)
 
-    #score_array.sort(reverse=True)
+    # score_array.sort(reverse=True)
 
     # Find the longest sequence that is within the std deviation of
     #best_mean, best_id = score_array[0]
     #best_len = len(fd[best_id].sequence)
-    #for _mean, _id in score_array[1:]:
+    # for _mean, _id in score_array[1:]:
     #    if _mean != best_mean:
     #        break
     #    _len = len(fd[_id].sequence)
@@ -109,8 +109,8 @@ def choose_template_by_blasr(fasta_filename, out_filename, nproc=8,
     for k, v in scores.iteritems():
         sr_per_zmw[zmw_from_subread(k)]
         this_score = sum(v)
-        #if this_score < best_score: # blasr score the less the better
-        if this_score > best_score: # similarity * aligned length, the larger the better
+        # if this_score < best_score: # blasr score the less the better
+        if this_score > best_score:  # similarity * aligned length, the larger the better
             best_id = k
             best_score = this_score
 
@@ -193,14 +193,14 @@ def pbdagcon_wrapper(fasta_filename, output_prefix, consensus_name, nproc=8,
             raise AlignGraphUtilError("Cannot run command: %s" % cmd)
 
         with FastaReader(tmp_cons_filename) as reader, \
-            open(cons_filename, 'w') as writer:
+                open(cons_filename, 'w') as writer:
             for rec in reader:
                 name = rec.name.strip()
                 if "/" in name:
                     # change cid format from c{cid}/0_{len} to c{cid}
                     name = name[:name.find('/')]
                 seq = rec.sequence.strip()
-                if not 'N' in seq: # Don't write if seq contains N
+                if not 'N' in seq:  # Don't write if seq contains N
                     writer.write(">{0}\n{1}\n".format(name, seq))
         os.remove(tmp_cons_filename)
     except AlignGraphUtilError:
@@ -213,16 +213,18 @@ def pbdagcon_wrapper(fasta_filename, output_prefix, consensus_name, nproc=8,
         else:
             #("Could not make pbdgacon consensus for %s" % fasta_filename)
             with open(ref_filename, 'w') as f:
-                f.write("") # empty output
+                f.write("")  # empty output
         if op.exists(tmp_cons_filename):
             os.remove(tmp_cons_filename)
     return 0
+
 
 def make_fai(fn):
     """Make FAI index file of a fasta file."""
     assert ' ' not in fn
     execute('rm -f %s' % (fn + '.fai'))
     execute('samtools faidx %s' % fn)
+
 
 def get_parser():
     """Set up and return argument parser."""
@@ -232,8 +234,10 @@ def get_parser():
     parser.add_argument("consensus_id", help="Consensus sequence ID name (ex: chr1_100_100_Insertion)")
     parser.add_argument("--nproc", default=8, type=int, help="Number of processes")
     parser.add_argument("--maxScore", default=-1000, type=int, help="blasr maxScore")
-    parser.add_argument("--use_first_seq_if_fail", default=True, action='store_false', help="Use the first sequence as backup reference if pbdagcon fails")
-    parser.add_argument("--ref_fa", type=str, help="Use reference fasta to bound consensus sequence and remove unmappablei edges")
+    parser.add_argument("--use_first_seq_if_fail", default=True, action='store_false',
+                        help="Use the first sequence as backup reference if pbdagcon fails")
+    parser.add_argument("--ref_fa", type=str,
+                        help="Use reference fasta to bound consensus sequence and remove unmappablei edges")
     parser.add_argument("--version", "-v", action='version', version='%(prog)s ' + get_version())
     return parser
 
@@ -251,6 +255,7 @@ def restore_args_with_whitespace(x):
                 y.append(xi)
     return y
 
+
 def get_fasta_fn_from_subreads_bam_fn(bam_fn):
     """
     Given a bam file `*.bam`, write record to fasta in the same directory as `*.subreads.fasta`
@@ -263,7 +268,9 @@ def get_fasta_fn_from_subreads_bam_fn(bam_fn):
     writer.close()
     return fasta_fn
 
+
 from .utils import blasr_cmd
+
 
 def get_region_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, work_dir):
     """
@@ -297,13 +304,14 @@ def get_span_region_of_seq_from_m4(a2b_m4_fn, b2a_m4_fn, a_seq_name):
     b2a_m4_fn --- m4 output mapping FASTA file B to FASTA file A
     a_seq_name --- name of a sequence (or chromosome) in FASTA file A
     return (a_seq_name, start, end) which spans all alignments in sequence of name `a_seq_name` in FASTA file A."""
-    a2b_dict = _get_query_span_regions_from_m4(a2b_m4_fn) # dict {query_name: NSE(query_name, start, end)}
-    b2a_dict = _get_target_span_regions_from_m4(b2a_m4_fn) # dict {target_name: NSE(target_name, start, end)}
+    a2b_dict = _get_query_span_regions_from_m4(a2b_m4_fn)  # dict {query_name: NSE(query_name, start, end)}
+    b2a_dict = _get_target_span_regions_from_m4(b2a_m4_fn)  # dict {target_name: NSE(target_name, start, end)}
     assert a_seq_name in a2b_dict.keys()
     assert a_seq_name in b2a_dict.keys()
     a2b_start, a2b_end = a2b_dict[a_seq_name].start, a2b_dict[a_seq_name].end
     b2a_start, b2a_end = b2a_dict[a_seq_name].start, b2a_dict[a_seq_name].end
     return apply_operator(a2b_start, b2a_start, min), apply_operator(a2b_end, b2a_end, max)
+
 
 class NSE(object):
     def __init__(self, name=None, start=None, end=None):
@@ -311,12 +319,13 @@ class NSE(object):
         self.start = start
         self.end = end
 
+
 def _get_query_span_regions_from_m4(m4_fn):
     d = defaultdict(lambda: NSE())
     for r in BLASRM4Reader(m4_fn):
         if '/0_' not in r.qID:
             raise ValueError("M4 file %s must be generated by blasr align two FASTA files!" % (m4_fn))
-        name = '/'.join(r.qID.split('/')[0:-1]) # BLASR adds '/0_len' to query fasta reads
+        name = '/'.join(r.qID.split('/')[0:-1])  # BLASR adds '/0_len' to query fasta reads
         start, end = d[name].start, d[name].end
         start = r.qStart if start is None else min(start, r.qStart)
         end = r.qEnd if end is None else max(end, r.qEnd)
@@ -332,8 +341,10 @@ def _get_target_span_regions_from_m4(m4_fn):
             start = r.sStart if start is None else min(start, r.sStart)
             end = r.sEnd if end is None else max(end, r.sEnd)
         elif r.sStrand == '-':
-            start = (r.sLength-r.sEnd) if start is None else min(start, (r.sLength-r.sEnd)) # exclusive end to inclusive start
-            end = (r.sLength-r.sStart) if end is None else max(end, (r.sLength-r.sStart)) # inclusive start to exclusive end
+            start = (r.sLength - r.sEnd) if start is None else min(start,
+                                                                   (r.sLength - r.sEnd))  # exclusive end to inclusive start
+            end = (r.sLength - r.sStart) if end is None else max(end,
+                                                                 (r.sLength - r.sStart))  # inclusive start to exclusive end
         d[name] = NSE(name, start, end)
     return d
 
@@ -343,36 +354,42 @@ def run(args):
     input_subreads_bam, ref_fa, output_prefix, consensus_id = args.input_subreads_bam, args.ref_fa, args.output_prefix, args.consensus_id,
     nproc, maxScore, use_first_seq_if_fail = args.nproc, args.maxScore, args.use_first_seq_if_fail
 
-    sr_fasta = get_fasta_fn_from_subreads_bam_fn(input_subreads_bam) #convert subreads.bam to subread.fasta
-    pbdagcon_wrapper(fasta_filename=sr_fasta, output_prefix=output_prefix+'.all', consensus_name=consensus_id, nproc=nproc, maxScore=maxScore, use_first_seq_if_fail=use_first_seq_if_fail)
+    sr_fasta = get_fasta_fn_from_subreads_bam_fn(input_subreads_bam)  # convert subreads.bam to subread.fasta
+    pbdagcon_wrapper(fasta_filename=sr_fasta, output_prefix=output_prefix + '.all', consensus_name=consensus_id,
+                     nproc=nproc, maxScore=maxScore, use_first_seq_if_fail=use_first_seq_if_fail)
 
     in_fa_fn, out_fa_fn = output_prefix + '.all.fasta', output_prefix + '.fasta'
-    if ref_fa: # use reference fasta to bound substr
+    if ref_fa:  # use reference fasta to bound substr
         in_fa_obj = Fastafile(in_fa_fn)
         assert_fasta_has_one_seq(in_fa_obj)
-        make_substr_fasta_of_seq_in_a_match_b(a_fa_obj=in_fa_obj, b_fa_obj=Fastafile(ref_fa), a_seq_name=in_fa_obj.references[0], out_fa_fn=out_fa_fn)
+        make_substr_fasta_of_seq_in_a_match_b(a_fa_obj=in_fa_obj, b_fa_obj=Fastafile(
+            ref_fa), a_seq_name=in_fa_obj.references[0], out_fa_fn=out_fa_fn)
     else:
         execute('ln %s %s' % (in_fa_fn, out_fa_fn))
 
-    try: # OK to fail indexing fasta, this may happen if fasta is empty
+    try:  # OK to fail indexing fasta, this may happen if fasta is empty
         make_fai(out_fa_fn)
     except Exception:
         pass
+
 
 def make_substr_fasta_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, out_fa_fn):
     """
     Get one substring of sequence a_seq_name in FASTA file a_fa_obj that match FASTA file b_fa_obj and write to out_fa_fn.
     if no such substring is found, write an empty file to out_fa_fn.
     """
-    chrom, start, end = get_region_of_seq_in_a_match_b(a_fa_obj=a_fa_obj, b_fa_obj=b_fa_obj, a_seq_name=a_seq_name, work_dir=op.dirname(out_fa_fn))
+    chrom, start, end = get_region_of_seq_in_a_match_b(
+        a_fa_obj=a_fa_obj, b_fa_obj=b_fa_obj, a_seq_name=a_seq_name, work_dir=op.dirname(out_fa_fn))
     if start is not None and end is not None:
         substr_fasta(fileobj=a_fa_obj, chrom=chrom, start=start, end=end, out_fa_fn=out_fa_fn)
-    else: # otherwise, output is empty
+    else:  # otherwise, output is empty
         open(out_fa_fn, 'w').write('')
+
 
 def main():
     """main"""
     sys.exit(run(get_parser().parse_args(sys.argv[1:])))
+
 
 if __name__ == "__main__":
     main()

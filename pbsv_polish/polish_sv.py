@@ -30,7 +30,7 @@ def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj
     srs = get_query_subreads_from_alns(alns)
     zmws = get_query_zmws_from_alns(alns)
     svp_files_obj = SVPolishFiles(root_dir=work_dir, min_qv=min_qv, ref_ext_len=ref_ext_len)
-    _mkdir(svp_files_obj.root_dir) # make a subdirectory (e.g., chrI_0_100_Deletion_-100) for all polishing files
+    _mkdir(svp_files_obj.root_dir)  # make a subdirectory (e.g., chrI_0_100_Deletion_-100) for all polishing files
     if len(srs) < C.MIN_POLISH_COVERAGE:
         log.warning("Skipping structural variant %s for not having enough coverage!" % (bed2prefix(bed_record)))
         return
@@ -42,12 +42,15 @@ def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj
     if make_reference_fa:
         # make a substring spanning the expected structural variants
         #ref_start, ref_end = max(0, bed_record.start - C.REFERENCE_EXTENSION), bed_record.end + C.REFERENCE_EXTENSION
-        ref_start, ref_end = get_ref_extension_for_sv(bed_record, reference_fasta_obj.lengths[reference_fasta_obj.references(bed_record.chrom)])
-        substr_fasta(fileobj=reference_fasta_obj, chrom=bed_record.chrom, start=ref_start, end=ref_end, out_fa_fn=svp_files_obj.sv_ref_fa)
+        ref_start, ref_end = get_ref_extension_for_sv(
+            bed_record, reference_fasta_obj.lengths[reference_fasta_obj.references(bed_record.chrom)])
+        substr_fasta(fileobj=reference_fasta_obj, chrom=bed_record.chrom,
+                     start=ref_start, end=ref_end, out_fa_fn=svp_files_obj.sv_ref_fa)
 
     if make_subreads_bam:
         # get all raw subreads spanning the structural variants
-        make_subreads_bam_of_zmws2(in_subreads_fn_or_obj=subreads_ds_obj, zmws=zmws, out_bam_fn=svp_files_obj.subreads_bam, out_fa_fn=svp_files_obj.subreads_fa)
+        make_subreads_bam_of_zmws2(in_subreads_fn_or_obj=subreads_ds_obj, zmws=zmws,
+                                   out_bam_fn=svp_files_obj.subreads_bam, out_fa_fn=svp_files_obj.subreads_fa)
 
     if make_scripts:
         svp_files_obj.make_all_scripts()
@@ -73,13 +76,14 @@ def run(args):
     bedreader_obj = BedReader(bed_fn)
 
     for bed_record, alns in yield_alns_from_bed_file(alnfile_obj, bedreader_obj=bedreader_obj):
-        ofile_obj.write('%s\t%s\n' % (len(get_query_subreads_from_alns(alns)), bed_record)) # write coverage info
+        ofile_obj.write('%s\t%s\n' % (len(get_query_subreads_from_alns(alns)), bed_record))  # write coverage info
 
         sv_prefix = bed2prefix(bed_record)
         work_dir = realpath(op.join(out_dir, sv_prefix))
         log.info("Processing sv %s" % sv_prefix)
         print("Processing sv %s" % sv_prefix)
-        polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa=True, make_subreads_bam=True, make_scripts=True, execute_scripts=True, min_qv=args.min_qv, ref_ext_len=args.ref_ext_len, use_sge=args.use_sge)
+        polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa=True, make_subreads_bam=True,
+                    make_scripts=True, execute_scripts=True, min_qv=args.min_qv, ref_ext_len=args.ref_ext_len, use_sge=args.use_sge)
 
     reference_fasta_obj.close()
     ofile_obj.close()
@@ -87,21 +91,26 @@ def run(args):
     subreads_ds_obj.close()
     bedreader_obj.close()
 
+
 def get_parser():
     """Set up and return argument parser."""
     parser = ArgumentParser("")
     parser.add_argument("in_dir", type=str, help="Input FASTA or FASTQ filename")
     parser.add_argument("in_bed_fn", type=str, help="Structural variants in BED file")
     parser.add_argument("out_dir", type=str, help="Output Directory")
-    parser.add_argument("--min_qv", default=C.MIN_POLISH_QV, type=int, help="Minimum Polished QV to include bases in consensus sequence")
-    parser.add_argument("--ref_ext_len", default=C.REFERENCE_EXTENSION, type=int, help="Extend reference sequence by ref_ext_len base pairs to both ends")
-    parser.add_argument("--use_sge", default=False, action='store_true', help="If True, use SGE; otherwise, run locally")
+    parser.add_argument("--min_qv", default=C.MIN_POLISH_QV, type=int,
+                        help="Minimum Polished QV to include bases in consensus sequence")
+    parser.add_argument("--ref_ext_len", default=C.REFERENCE_EXTENSION, type=int,
+                        help="Extend reference sequence by ref_ext_len base pairs to both ends")
+    parser.add_argument("--use_sge", default=False, action='store_true',
+                        help="If True, use SGE; otherwise, run locally")
     return parser
 
 
 def main():
     """main"""
     sys.exit(run(get_parser().parse_args(sys.argv[1:])))
+
 
 if __name__ == "__main__":
     main()

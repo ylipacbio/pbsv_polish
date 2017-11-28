@@ -7,7 +7,6 @@ from ..utils import write_to_bash_file, qsub_to_sge_or_run_local, sv_pbdagcon_cm
 
 class SVPolishFiles(object):
 
-    #def __init__(self, root_dir, min_qv=C.MIN_POLISH_QV, ref_ext_len=C.REFERENCE_EXTENSION):
     def __init__(self, root_dir, min_qv, ref_ext_len):
         """
         root_dir is a directory containing all files for polishing structural variants.
@@ -16,6 +15,7 @@ class SVPolishFiles(object):
         """
         def f(strs):
             return '.'.join(strs)
+
         def g(fn):
             return op.join(self.root_dir, fn)
 
@@ -118,4 +118,3 @@ class SVPolishFiles(object):
         return pbsv_run_and_transform_cmds(reads_fn=self.polish_fa, ref_fa_fn=self.sv_ref_fa,
                                            cfg_fn=C.PBSV_POLISH_CFG, o_bam_fn=self.polish_ref_blasr_bam,
                                            o_bed_fn=self.polish_blasr_bed, algorithm='blasr')
-

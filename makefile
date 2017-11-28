@@ -19,5 +19,7 @@ indep:
 test:
 	# Relatively fast tests
 	py.test ${MY_NOSE_FLAGS} tests/itest/test_*.py
+autofmt:
+	find pbsv_polish -type f -name '*.py' | autoflake --in-place --remove-unused-variables
 clean:
 	find . -type f -name '*.pyc' |xargs rm -f

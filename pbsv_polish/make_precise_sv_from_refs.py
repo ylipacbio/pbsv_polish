@@ -17,9 +17,7 @@ and R64 sequences, then use `pbsv run` to call structural variants.
 from argparse import ArgumentParser
 import os.path as op
 import sys
-import os
 import logging
-from collections import defaultdict
 from pbcore.io import DataSet, FastaWriter
 
 from pbsv.independent.utils import execute, realpath, execute_as_bash
@@ -46,7 +44,7 @@ def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj,
     * if make_subreads_bam is True, generate a subreads bam of all subreads of zmws spanning this strucrtural variant
     * if make_scripts is True, generate scripts to call polished structural variant
     """
-    srs = get_query_subreads_from_alns(alns)
+    get_query_subreads_from_alns(alns)
     zmws = get_query_zmws_from_alns(alns)
 
     sv_prefix = bed2prefix(bed_record)
@@ -70,14 +68,13 @@ def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj,
     if execute_scripts:
         svp_files_obj.execute_all_scripts(use_sge=use_sge)
 
-from StringIO import StringIO
 
 def get_dict_from_json(fp):
     """Get a dict from json"""
     import json
     try:
         return dict(json.load(fp))
-    except Exception as e:
+    except Exception:
         raise ValueError("Could not get a dict from %s" % fp.filename)
 
 def make_precise_sv(ref_a_obj, ref_b_obj, bed_record, b2a_names, work_dir):

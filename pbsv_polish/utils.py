@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
 import os.path as op
-import sys
-import os
 from collections import defaultdict
 import numpy as np
 
@@ -46,7 +44,7 @@ def substr_fasta(fileobj, chrom, start, end, out_fa_fn):
     """fetch a substring of reference fasta sequence and save to output fasta file out_fa_fn"""
     try:
         seq = fileobj.fetch(str(chrom), int(start), int(end))
-    except Exception as e:
+    except Exception:
         raise ValueError("Could not get substring (%s, %s, %s) from %s" % (chrom, start, end, fileobj.filename))
     name = '%s__substr__%s_%s' % (chrom, start, end)
     write_fasta(out_fa_fn, [(name, seq)])
@@ -80,7 +78,7 @@ def zmw_from_subread(subread):
     """Given a subread 'movie/zmw/start_end', return 'movie/zmw'"""
     try:
         return '/'.join(subread.split('/')[0:2])
-    except Exception as e:
+    except Exception:
         raise ValueError("Could not convert read %s to zmw" % subread)
 
 def write_to_bash_file(cmds, bash_sh_fn, write_mode='w'):

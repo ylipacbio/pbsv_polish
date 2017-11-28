@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser
-from collections import defaultdict
-import os
-import os.path as op
 import sys
-import json
 
 from pbsv.independent.utils import is_fasta
 from pbsv.libs import Fastafile, AlignmentFile

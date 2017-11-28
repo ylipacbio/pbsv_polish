@@ -3,9 +3,7 @@
 from argparse import ArgumentParser
 import os.path as op
 import sys
-import os
 import logging
-from collections import defaultdict
 from pbcore.io import DataSet, FastaWriter
 
 from pbsv.independent.utils import realpath

@@ -12,7 +12,6 @@ from collections import defaultdict
 import os
 import os.path as op
 import sys
-import json
 import numpy as np
 
 from pbcore.util.Process import backticks
@@ -30,7 +29,6 @@ from .utils import *
 
 class AlignGraphUtilError(Exception):
     """Align Group Util Error Class"""
-    pass
 
 
 def choose_template_by_blasr(fasta_filename, out_filename, nproc=8,
@@ -109,7 +107,7 @@ def choose_template_by_blasr(fasta_filename, out_filename, nproc=8,
     sr_per_zmw = get_sr_per_zmw(fasta_filename)
     best_id, best_score = None, 0
     for k, v in scores.iteritems():
-        n_sr = sr_per_zmw[zmw_from_subread(k)]
+        sr_per_zmw[zmw_from_subread(k)]
         this_score = sum(v)
         #if this_score < best_score: # blasr score the less the better
         if this_score > best_score: # similarity * aligned length, the larger the better

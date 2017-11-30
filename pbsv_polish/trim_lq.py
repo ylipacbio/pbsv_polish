@@ -12,7 +12,7 @@ from pbcore.io import FastaReader, FastaWriter, FastqReader, FastqWriter
 
 def get_parser():
     """Set up and return argument parser."""
-    parser = ArgumentParser("Trim LQ sequences on both ends, where average MapQV of LQ sequences are less than min_qv.")
+    parser = ArgumentParser("Trim LQ sequences on both ends, where average MapQV of LQ sequences are less than min_qv. If Output is out.fastq, also write to out.fasta.")
     parser.add_argument("input_fn", help="Input FASTA or FASTQ filename")
     parser.add_argument("output_fn", help="Output FASTA or FASTQ filename")
     parser.add_argument("--windowsize", help="Compute average MapQV in windows of size", default=100, type=int)
@@ -82,19 +82,24 @@ def get_hq_start_end_above_qv(seq, qual, min_qv, windowsize):
     return (start, end)
 
 
-def trim_fastq(i_fn, o_fn, min_qv, windowsize):
-    with FastqReader(i_fn) as reader, FastqWriter(o_fn) as writer:
+def trim_fastq(i_fn, o_fn, o_fa_fn, min_qv, windowsize):
+    with FastqReader(i_fn) as reader, FastqWriter(o_fn) as writer, FastaWriter(o_fa_fn) as fawriter:
         for r in reader:
             avg_qual = get_avg_value_in_window(r.quality, windowsize)
             hq_start, hq_end = get_hq_start_end_fastq(avg_qual, min_qv)
-            writer.writeRecord(r.id+'/%s_%s' % (hq_start, hq_end), r.sequence[hq_start:hq_end], r.quality[hq_start:hq_end])
+            newid = r.id+'/%s_%s' % (hq_start, hq_end)
+            newseq = r.sequence[hq_start:hq_end]
+            newqul = r.quality[hq_start:hq_end]
+            writer.writeRecord(newid, newseq, newqul)
+            fawriter.writeRecord(newid, newseq)
 
 
 def trim_lq(i_fn, o_fn, min_qv, windowsize):
     if all(is_fasta(fn) for fn in [i_fn, o_fn]):
         trim_fasta(i_fn, o_fn)
     elif all(is_fastq(fn) for fn in [i_fn, o_fn]):
-        trim_fastq(i_fn, o_fn, min_qv, windowsize)
+        o_fa_fn = o_fn[0:o_fn.rfind('.')] + '.fasta'
+        trim_fastq(i_fn, o_fn, o_fa_fn, min_qv, windowsize)
     else:
         raise ValueError("Input and output must be both BED or VCF")
 

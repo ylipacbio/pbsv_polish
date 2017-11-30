@@ -209,14 +209,14 @@ def variant_caller_cmd(align_bam, ref_fa, out_fa, out_fq, nproc):
 
 def trim_lq_cmd(in_fq, out_fq, out_fa, min_qv):
     assert is_fastq(in_fq) and is_fastq(out_fq) and is_fasta(out_fa)
-    # simply remove lower case sequences on both ends
+    # FASTA: simply remove lower case sequences on both ends
+    # FASTQ: remove LQ sequences on both ends
     c0 = 'trim_lq {in_fq} {out_fq} --min_qv {min_qv}'.format(in_fq=in_fq, out_fq=out_fq, min_qv=min_qv)
-    c1 = 'fq2fa {fq} {fa}'.format(fq=out_fq, fa=out_fa)
     return ' ; '.join([c0, c1])
 
 
 def sv_transform_coordinate_cmd(in_sv_fn, o_sv_fn):
-    return 'sv_transform_coordinate %s %s' % (in_sv_fn, o_sv_fn)
+    return 'sv_transform_coordinates %s %s' % (in_sv_fn, o_sv_fn)
 
 
 def make_input_json_cmd(bam_fn, json_fn, sample='Consensus'):

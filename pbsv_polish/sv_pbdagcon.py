@@ -95,11 +95,11 @@ def choose_template_by_blasr(fasta_filename, out_filename, nproc=8,
     #        best_len = _len
     def get_sr_per_zmw(fasta_filename):
         """Given a subreads fasta file, return number of subreads in each zmw"""
-        sr_per_zmw = defaultdict(0)
+        sr_per_zmw = defaultdict(lambda: 0)
         from pbsv.libs import Fastafile
         from .utils import zmw_from_subread
         obj = Fastafile(fasta_filename)
-        for name in obj.references():
+        for name in obj.references:
             sr_per_zmw[zmw_from_subread(name)] += 1
         return sr_per_zmw
 

@@ -27,7 +27,8 @@ def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj
     """
     cov = sum([bed_record.fmts[sample].ad for sample in bed_record.samples])
     if cov <= C.MIN_POLISH_COVERAGE:
-        msg = "SV={sv}, Coverage={cov}, Skipping structural variant for not having enough coverage!".format(cov=cov, sv=bed2prefix(bed_record))
+        msg = "SV={sv}, Coverage={cov}, Skipping structural variant for not having enough coverage!".format(
+            cov=cov, sv=bed2prefix(bed_record))
         log.warning(msg)
         report_f(msg)
         return
@@ -40,7 +41,7 @@ def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj
     if make_reference_fa:
         # make a substring spanning the expected structural variants
         ref_start, ref_end = get_ref_extension_for_sv(
-                bed_record, reference_fasta_obj.get_reference_length(bed_record.chrom))
+            bed_record, reference_fasta_obj.get_reference_length(bed_record.chrom))
         substr_fasta(fileobj=reference_fasta_obj, chrom=bed_record.chrom,
                      start=ref_start, end=ref_end, out_fa_fn=svp_files_obj.sv_ref_fa)
 
@@ -72,15 +73,17 @@ def run(args):
     ofile_obj = open(coverage_fn, 'w')
     alnfile_obj = SingleFileOpener(aln_fn).alignfile
     subreads_ds_obj = SubreadSet(subreads_xml_fn)
-    bedreader_obj = BedReader(bed_fn) # get_sv_from_non_pbsv_bed(bed_fn)
+    bedreader_obj = BedReader(bed_fn)  # get_sv_from_non_pbsv_bed(bed_fn)
     samples = bedreader_obj.samples
 
     report_fp = open(op.join(out_dir, 'report.log'), 'w')
+
     def report_f(msg):
         report_fp.write(msg + '\n')
 
     for bed_record, alns in yield_alns_from_bed_file(alnfile_obj, bedreader_obj=bedreader_obj):
-        ofile_obj.write('%s\t%s\n' % (len(get_query_subreads_from_alns(alns)), bed_record.to_str(samples)))  # write coverage info
+        ofile_obj.write('%s\t%s\n' % (len(get_query_subreads_from_alns(alns)),
+                                      bed_record.to_str(samples)))  # write coverage info
 
         sv_prefix = bed2prefix(bed_record)
         work_dir = realpath(op.join(out_dir, sv_prefix))
@@ -98,7 +101,8 @@ def run(args):
 
 def get_parser():
     """Set up and return argument parser."""
-    parser = argparse.ArgumentParser("Polish structural variants in BED", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser("Polish structural variants in BED",
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("in_dir", type=str, help="Input FASTA or FASTQ filename")
     parser.add_argument("in_bed_fn", type=str, help="Structural variants in BED file")
     parser.add_argument("out_dir", type=str, help="Output Directory")

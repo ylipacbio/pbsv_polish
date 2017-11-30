@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 
 from argparse import ArgumentParser
-from collections import defaultdict
-import os
-import os.path as op
 import sys
-import json
 
 from pbsv.independent.utils import is_bed, is_vcf
 from pbsv.io.VcfIO import VcfReader, VcfWriter, VcfRecord, BedReader, BedWriter, BedRecord
@@ -18,6 +14,7 @@ def get_parser():
     parser.add_argument("output_sv_fn", help="Output BED or VCF filename, format must be the same as input")
     return parser
 
+
 def get_reader(fn):
     """Return a BedReader obj or VcfReader obj depending on input fn format"""
     if is_bed(fn):
@@ -26,6 +23,7 @@ def get_reader(fn):
         return VcfReader(fn)
     else:
         raise ValueError("Could not get reader for %s" % fn)
+
 
 def get_writer(fn, samples):
     """Return a BedWriter obj or VcfWriter obj depending on fn format"""
@@ -52,12 +50,12 @@ def transform_coordinate_of_sv(svobj):
     """
     chrom, start, end = get_chrom_start_end_from_string(svobj.chrom)
     if isinstance(svobj, BedRecord):
-        return BedRecord(chrom=chrom, start=svobj.start+start, end=svobj.end+start,
+        return BedRecord(chrom=chrom, start=svobj.start + start, end=svobj.end + start,
                          sv_type=svobj.sv_type, sv_id=svobj.sv_id,
                          sv_len=svobj.sv_len, alt=svobj.alt, annotations=svobj.annotations,
                          fmts=svobj.fmts)
     elif isinstance(svobj, VcfRecord):
-        return VcfRecord(chrom=chrom, pos=svobj.pos+start, end=svobj.end+start,
+        return VcfRecord(chrom=chrom, pos=svobj.pos + start, end=svobj.end + start,
                          ref=svobj.ref, alt=svobj.alt, fmts=svobj.fmts,
                          annotations=svobj.annotations, sv_type=svobj.sv_type, sv_len=svobj.sv_len)
     else:
@@ -65,7 +63,6 @@ def transform_coordinate_of_sv(svobj):
 
 
 def get_chrom_start_end_from_string(s):
-
     """Get chrom name, int(start), int(end) from a string '{chrom}__substr__{start}_{end}'
     ...doctest:
     >>> get_chrom_start_end_from_string('chr01__substr__11838_13838')
@@ -75,8 +72,9 @@ def get_chrom_start_end_from_string(s):
         chrom, s_e = s.split('__substr__')
         start, end = s_e.split('_')
         return chrom, int(start), int(end)
-    except Exception as e:
-        raise ValueError ("String %s must be of format '{chrom}__substr__{start}_{end}'" % s)
+    except Exception:
+        raise ValueError("String %s must be of format '{chrom}__substr__{start}_{end}'" % s)
+
 
 def transform_coordinates(i_fn, o_fn):
     """Transform coordinates of all structural variants in i_fn to o_fn"""
@@ -87,13 +85,16 @@ def transform_coordinates(i_fn, o_fn):
             for r in reader:
                 writer.writeRecord(transform_coordinate_of_sv(r))
 
+
 def run(args):
     i_fn, o_fn = args.input_sv_fn, args.output_sv_fn
     transform_coordinates(i_fn, o_fn)
 
+
 def main():
     """main"""
     sys.exit(run(get_parser().parse_args(sys.argv[1:])))
+
 
 if __name__ == "__main__":
     main()

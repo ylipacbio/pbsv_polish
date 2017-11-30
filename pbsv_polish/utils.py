@@ -310,7 +310,7 @@ def basename_prefix_of_fn(fn):
     """Return base name prefix of a file path, e.g.,
     ..doctest:
         >>> basename_prefix_of_fn('/home/my.b.txt')
-        "my.b"
+        'my.b'
     """
     basename = op.basename(fn)
     return basename[0:basename.rfind('.')] if '.' in basename else basename

@@ -22,12 +22,13 @@ def get_parser():
 def get_hq_start_end(seq, is_hq_f):
     """
     ..doctest:
-    >>> get_hq_start_end('')
-    0, 0
-    >>> get_hq_start_end('GC')
-    0, 2
-    >>> get_hq_start_end('aGCc')
-    1, 3
+    >>> def f(c): return c.isupper()
+    >>> get_hq_start_end('', f)
+    (0, 0)
+    >>> get_hq_start_end('GC', f)
+    (0, 2)
+    >>> get_hq_start_end('aGCc', f)
+    (1, 3)
     """
     start, end = 0, 0
     i = 0

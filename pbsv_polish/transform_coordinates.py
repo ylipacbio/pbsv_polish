@@ -43,11 +43,12 @@ def transform_coordinate_of_sv(svobj):
     conform to format `chrom__substr__start_end`, (e.g., `chr01__substr__11838__13838`),
     transform its coordinate to `chrom`.
     ...doctest:
-    >>> o1 = BedRecord(chrom='chr1__substr__100_200', start=0, end=100, sv_type='Deletion',
-                       sv_len=-100, seq=None, fmt='0/1:3:6', annotations=['ALU'])
-    >>> o2 = transform_coordinate_of_sv(svobj)
-    >>> o2.chrom, o2.start, o2.end
-    'chr1', 100, 200
+        >>> from pbsv.independent.common import SvFmts
+        >>> o1 = BedRecord(chrom='chr1__substr__100_200', start=0, end=100, sv_type='Deletion', sv_id=None, \
+                sv_len=-100, alt=None, fmts=SvFmts.fromDict({'SAMPLE1': '0/1:3:6'}), annotations=['ALU'])
+        >>> o2 = transform_coordinate_of_sv(o1)
+        >>> o2.chrom, o2.start, o2.end
+        ('chr1', 100, 200)
     """
     chrom, start, end = get_chrom_start_end_from_string(svobj.chrom)
     if isinstance(svobj, BedRecord):
@@ -67,8 +68,8 @@ def get_chrom_start_end_from_string(s):
 
     """Get chrom name, int(start), int(end) from a string '{chrom}__substr__{start}_{end}'
     ...doctest:
-    >>> get_chrom_start_end_from_string('chr01__substr__11838__13838)
-    'chr01', 11838, 13838
+    >>> get_chrom_start_end_from_string('chr01__substr__11838_13838')
+    ('chr01', 11838, 13838)
     """
     try:
         chrom, s_e = s.split('__substr__')

@@ -25,10 +25,6 @@ def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj
     * if make_subreads_bam is True, generate a subreads bam of all subreads of zmws spanning this strucrtural variant
     * if make_scripts is True, generate scripts to call polished structural variant
     """
-    # srs = get_query_subreads_from_alns(alns)
-    zmws = get_query_zmws_from_alns(alns)
-    svp_files_obj = SVPolishFiles(root_dir=work_dir, min_qv=min_qv, ref_ext_len=ref_ext_len)
-    _mkdir(svp_files_obj.root_dir)  # make a subdirectory (e.g., chrI_0_100_Deletion_-100) for all polishing files
     cov = sum([bed_record.fmts[sample].ad for sample in bed_record.samples])
     if cov <= C.MIN_POLISH_COVERAGE:
         msg = "SV={sv}, Coverage={cov}, Skipping structural variant for not having enough coverage!".format(cov=cov, sv=bed2prefix(bed_record))
@@ -36,6 +32,10 @@ def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj
         report_f(msg)
         return
 
+    # srs = get_query_subreads_from_alns(alns)
+    zmws = get_query_zmws_from_alns(alns)
+    svp_files_obj = SVPolishFiles(root_dir=work_dir, min_qv=min_qv, ref_ext_len=ref_ext_len)
+    _mkdir(svp_files_obj.root_dir)  # make a subdirectory (e.g., chrI_0_100_Deletion_-100) for all polishing files
     # TODO: special treatment for heterzygous sv?
     if make_reference_fa:
         # make a substring spanning the expected structural variants
@@ -86,7 +86,7 @@ def run(args):
         work_dir = realpath(op.join(out_dir, sv_prefix))
         log.info("Processing sv %s" % sv_prefix)
         polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa=True, make_subreads_bam=True,
-                    make_scripts=True, execute_scripts=True, min_qv=args.min_qv, ref_ext_len=args.ref_ext_len, use_sge=args.use_sge, report_f=report_f)
+                    make_scripts=True, execute_scripts=False, min_qv=args.min_qv, ref_ext_len=args.ref_ext_len, use_sge=args.use_sge, report_f=report_f)
 
     reference_fasta_obj.close()
     ofile_obj.close()

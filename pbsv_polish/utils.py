@@ -10,7 +10,7 @@ from pbsv.io.bamstream import iterator_of_alignments_in_ref_regions
 from pbsv.io.VcfIO import BedReader, BedRecord
 from pbsv.independent.common import RefRegion, SvType, SvFmts, SvFmt
 from pbsv.independent.utils import _is_fmt, cmds_to_bash, execute, realpath, mv_cmd, autofmt, is_fasta
-from pbsv.run import svcall_cmd
+from pbsv.run import svcall_cmd, ngmlrmap_cmd, sort_index_chain_bam_cmd
 from .independent import Constants as C
 
 import logging
@@ -220,26 +220,36 @@ def sv_transform_coordinate_cmd(in_sv_fn, o_sv_fn):
     return 'sv_transform_coordinate %s %s' % (in_sv_fn, o_sv_fn)
 
 
-def pbsv_align_cmd(reads_fn, ref_fa_fn, cfg_fn, o_bam_fn):
-    return 'pbsv align {r} {q} {o} --cfg_fn={c}'.format(r=ref_fa_fn, q=reads_fn, c=cfg_fn, o=o_bam_fn)
+def make_input_json_cmd(bam_fn, json_fn, sample='Consensus'):
+    """CMD which creates a json file with content [['path_to_bam', 'sample']], which will later
+    be used as pbsv call input.
+    """
+    from pipes import quote
+    c0 = 'echo [[\\\"{}\\\", \\\"{}\\\"]] > {}'.format(quote(bam_fn), quote(sample), quote(json_fn))
+    return c0
 
 
 def pbsv_run_and_transform_cmds(reads_fn, ref_fa_fn, cfg_fn, o_bam_fn, o_bed_fn, algorithm='ngmlr'):
-    """Using blasr to align reads to ref_fa_fn, then run `pbsv call` to call structural variants."""
-    #c0 = _align_cmd(reads_fn=reads_fn, ref_fa_fn=ref_fa_fn, cfg_fn=cfg_fn, algorithm=algorithm)
+    """Using ngmlr or blasr to align reads to ref_fa_fn, then run `pbsv call` to call structural variants."""
+    o_prefix = o_bam_fn[0:o_bam_fn.rfind('.bam')]
     if algorithm == 'ngmlr':
-        c0 = pbsv_align_cmd(reads_fn=reads_fn, ref_fa_fn=ref_fa_fn, cfg_fn=cfg_fn, o_bam_fn=o_bam_fn)
+        # Call pbsvutil ngmlr to map reads_fn to ref_fa_fn to create sorted indexed bam file.
+        c0 = ngmlrmap_cmd(in_bam=reads_fn, ref_fn=ref_fa_fn, out_bam=o_bam_fn, cfg=cfg_fn)
     elif algorithm == 'blasr':
         c0 = blasr_cmd(query_fn=reads_fn, target_fn=ref_fa_fn, out_fn=o_bam_fn)
     else:
         raise ValueError('Could not use algorithm %s to align reads to reference.' % algorithm)
 
+    c1 = sort_index_bam_inline_cmd(o_bam_fn)
+
+    json_fn = o_prefix + '.json' # create input json for `pbsv call`
+    c2 = make_input_json_cmd(o_bam_fn, json_fn, 'Consensus')
+
     tmp_bed = o_bed_fn + '.use_substr_as_chrom.bed'
-    c1 = svcall_cmd(ref_fn=ref_fa_fn, in_bam=o_bam_fn, out_bed=tmp_bed, cfg=cfg_fn)
-    c2 = rm_ngmlr_indices_cmd(ref_fn=ref_fa_fn)
-    c3 = sv_transform_coordinate_cmd(tmp_bed, o_bed_fn)
-    c4 = sort_index_bam_inline_cmd(o_bam_fn)
-    return [c0, c1, c2, c3, c4]
+    c3 = svcall_cmd(ref_fn=ref_fa_fn, in_bam=json_fn, out_bed=tmp_bed, cfg=cfg_fn)
+    c4 = rm_ngmlr_indices_cmd(ref_fn=ref_fa_fn)
+    c5 = sv_transform_coordinate_cmd(tmp_bed, o_bed_fn)
+    return [c0, c1, c2, c3, c4, c5]
 
 
 def rm_ngmlr_indices_cmd(ref_fn):

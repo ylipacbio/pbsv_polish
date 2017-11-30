@@ -164,8 +164,7 @@ def subreads_of_a_zmw_in_ds(subreads_ds, zmw):
     zmws --- a list of zmws, e.g., e.g. ['movie1/100', 'movie2/200']
     """
     movie, zmw_int = get_movie_and_zmw_from_name(zmw)
-    rows = np.nonzero(np.logical_and(subreads_ds.index.qId == subreads_ds.movieIds[movie], subreads_ds.index.holeNumber == zmw_int))[
-        0]  # pylint: disable=no-member
+    rows = np.nonzero(np.logical_and(subreads_ds.index.qId == subreads_ds.movieIds[movie], subreads_ds.index.holeNumber == zmw_int))[0]  # pylint: disable=no-member
     return subreads_ds[rows]
 
 

@@ -47,7 +47,8 @@ setup(
         'collect_polished_sv = pbsv_polish.collect_polished_sv:main',
         'substr_fasta = pbsv_polish.substr_fasta:main',
         'make_precise_sv_from_refs = pbsv_polish.make_precise_sv_from_refs:main',
-        'sv_transform_coordinates= pbsv_polish.transform_coordinates:main'
+        'sv_transform_coordinates= pbsv_polish.transform_coordinates:main',
+        'trim_lq= pbsv_polish.trim_lq:main'
     ]},
     install_requires=_get_requirements(_get_local_file(_REQUIREMENTS_FILE)),
     tests_require=['pytest'],

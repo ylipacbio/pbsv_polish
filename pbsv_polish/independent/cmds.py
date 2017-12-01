@@ -44,7 +44,8 @@ def trim_lq_cmd(in_fq, out_fq, out_fa, min_qv):
     assert is_fastq(in_fq) and is_fastq(out_fq) and is_fasta(out_fa)
     # FASTA: simply remove lower case sequences on both ends
     # FASTQ: remove LQ sequences on both ends
-    c0 = '{entry} {in_fq} {out_fq} --min-qv {min_qv}'.format(entry=TRIM_ENTRY, in_fq=in_fq, out_fq=out_fq, min_qv=min_qv)
+    c0 = '{entry} {in_fq} {out_fq} --min-qv {min_qv}'.format(entry=TRIM_ENTRY,
+                                                             in_fq=in_fq, out_fq=out_fq, min_qv=min_qv)
     return c0
 
 

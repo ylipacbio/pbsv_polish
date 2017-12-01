@@ -9,6 +9,7 @@ def is_fastq(fn):
     """Return true if a file extension is fq or fastq"""
     return _is_fmt(fn, ["fq", "fastq"])
 
+
 def mkdir(path):
     if not op.isdir(path):
         os.makedirs(path)

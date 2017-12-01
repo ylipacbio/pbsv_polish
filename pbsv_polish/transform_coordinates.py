@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from argparse import ArgumentParser
-import sys
 
 from pbsv.independent.utils import is_bed, is_vcf
 from pbsv.io.VcfIO import VcfReader, VcfWriter, VcfRecord, BedReader, BedWriter, BedRecord

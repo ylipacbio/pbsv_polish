@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-from argparse import ArgumentParser
-import sys
 
 from .independent.utils import is_fasta, is_fastq
 from pbcore.io import FastaReader, FastaWriter, FastqReader, FastqWriter
 
 trim_desc = "Trim LQ sequences on both ends, where average MapQV of LQ sequences are less than min_qv." + \
             "If Output is out.fastq, also write to out.fasta."
+
 
 def get_hq_start_end(seq, is_hq_f):
     """

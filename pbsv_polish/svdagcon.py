@@ -7,11 +7,9 @@ Make a consensus sequence from subreads.bam
 (3) Call pbdagcon
 """
 
-from argparse import ArgumentParser
 from collections import defaultdict
 import os
 import os.path as op
-import sys
 import numpy as np
 
 from pbcore.util.Process import backticks

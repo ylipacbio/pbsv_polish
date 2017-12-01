@@ -3,6 +3,7 @@
 from .utils import is_fastq
 from pbsv.independent.utils import _is_fmt, cmds_to_bash, execute, realpath, mv_cmd, autofmt, is_fasta
 from pbsv.run import svcall_cmd, ngmlrmap_cmd, sort_index_chain_bam_cmd
+from ..__init__ import TRANSFORM_ENTRY, TRIM_ENTRY, SVDAGCON_ENTRY
 
 
 def sort_index_bam_inline_cmd(in_fn, nproc=4, tmp_dir=None):
@@ -31,7 +32,7 @@ def blasr_cmd(query_fn, target_fn, out_fn, nproc=8):
 
 
 def sv_pbdagcon_cmd(subreads_bam, output_prefix, output_seq_id, ref_fa):
-    return 'sv_pbdagcon %s %s %s --ref_fa %s' % (subreads_bam, output_prefix, output_seq_id, ref_fa)
+    return '{} {} {} {} --ref-fa {}'.format(SVDAGCON_ENTRY, subreads_bam, output_prefix, output_seq_id, ref_fa)
 
 
 def variant_caller_cmd(align_bam, ref_fa, out_fa, out_fq, nproc):
@@ -43,12 +44,12 @@ def trim_lq_cmd(in_fq, out_fq, out_fa, min_qv):
     assert is_fastq(in_fq) and is_fastq(out_fq) and is_fasta(out_fa)
     # FASTA: simply remove lower case sequences on both ends
     # FASTQ: remove LQ sequences on both ends
-    c0 = 'trim_lq {in_fq} {out_fq} --min_qv {min_qv}'.format(in_fq=in_fq, out_fq=out_fq, min_qv=min_qv)
+    c0 = '{entry} {in_fq} {out_fq} --min-qv {min_qv}'.format(entry=TRIM_ENTRY, in_fq=in_fq, out_fq=out_fq, min_qv=min_qv)
     return c0
 
 
 def sv_transform_coordinate_cmd(in_sv_fn, o_sv_fn):
-    return 'sv_transform_coordinates %s %s' % (in_sv_fn, o_sv_fn)
+    return '{entry} {i} {o}'.format(entry=TRANSFORM_ENTRY, i=in_sv_fn, o=o_sv_fn)
 
 
 def make_input_json_cmd(bam_fn, json_fn, sample='Consensus'):

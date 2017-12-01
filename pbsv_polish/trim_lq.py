@@ -3,7 +3,7 @@
 from argparse import ArgumentParser
 import sys
 
-from .utils import is_fasta, is_fastq
+from .independent.utils import is_fasta, is_fastq
 from pbcore.io import FastaReader, FastaWriter, FastqReader, FastqWriter
 
 trim_desc = "Trim LQ sequences on both ends, where average MapQV of LQ sequences are less than min_qv." + \

@@ -9,14 +9,6 @@ from pbsv.io.VcfIO import VcfReader, VcfWriter, VcfRecord, BedReader, BedWriter,
 transform_desc = 'Transform structural variants coordinates from substring to chromosome.'
 
 
-def get_parser():
-    """Set up and return argument parser."""
-    parser = ArgumentParser(transform_desc)
-    parser.add_argument("input_sv_fn", help="Input BED or VCF filename")
-    parser.add_argument("output_sv_fn", help="Output BED or VCF filename, format must be the same as input")
-    return parser
-
-
 def get_reader(fn):
     """Return a BedReader obj or VcfReader obj depending on input fn format"""
     if is_bed(fn):
@@ -86,17 +78,3 @@ def run_transform(i_fn, o_fn):
         with get_writer(o_fn, reader.samples) as writer:
             for r in reader:
                 writer.writeRecord(transform_coordinate_of_sv(r))
-
-
-def run(args):
-    i_fn, o_fn = args.input_sv_fn, args.output_sv_fn
-    run_transform(i_fn, o_fn)
-
-
-def main():
-    """main"""
-    sys.exit(run(get_parser().parse_args(sys.argv[1:])))
-
-
-if __name__ == "__main__":
-    main()

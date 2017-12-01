@@ -229,22 +229,6 @@ def make_fai(fn):
     execute('samtools faidx %s' % fn)
 
 
-def get_parser():
-    """Set up and return argument parser."""
-    parser = ArgumentParser(svdagcon_desc)
-    parser.add_argument("input_subreads_bam", help="Input fasta filename")
-    parser.add_argument("output_prefix", help="Output filename prefix (ex: sv_consensus)")
-    parser.add_argument("consensus_id", help="Consensus sequence ID name (ex: chr1_100_100_Insertion)")
-    parser.add_argument("--nproc", default=8, type=int, help="Number of processes")
-    parser.add_argument("--max_score", default=-1000, type=int, help="blasr max_score")
-    parser.add_argument("--use_first_seq_if_fail", default=True, action='store_false',
-                        help="Use the first sequence as backup reference if pbdagcon fails")
-    parser.add_argument("--ref_fa", type=str,
-                        help="Use reference fasta to bound consensus sequence and remove unmappablei edges")
-    parser.add_argument("--version", "-v", action='version', version='%(prog)s ' + get_version())
-    return parser
-
-
 def get_fasta_fn_from_subreads_bam_fn(bam_fn):
     """
     Given a bam file `*.bam`, write record to fasta in the same directory as `*.subreads.fasta`
@@ -374,12 +358,3 @@ def make_substr_fasta_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, out_fa
         substr_fasta(fileobj=a_fa_obj, chrom=chrom, start=start, end=end, out_fa_fn=out_fa_fn)
     else:  # otherwise, output is empty
         open(out_fa_fn, 'w').write('')
-
-
-def main():
-    """main"""
-    sys.exit(run(get_parser().parse_args(sys.argv[1:])))
-
-
-if __name__ == "__main__":
-    main()

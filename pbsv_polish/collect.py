@@ -46,25 +46,3 @@ def run_collect(in_bed_fn, out_dir, collected_bed_fn, min_qv, ref_ext_len):
                     writer.writeRecord(r.to_str(reader.samples))
 
     writer.close()
-
-
-def get_parser():
-    """Set up and return argument parser."""
-    parser = ArgumentParser(collect_desc)
-    parser.add_argument("in_bed_fn", type=str, help="Structural variants in BED file")
-    parser.add_argument("out_dir", type=str, help="Output Directory")
-    parser.add_argument("collected_bed_fn", type=str, help="Polished structural variants in BED file")
-    parser.add_argument("--min_qv", default=C.MIN_POLISH_QV, type=int,
-                        help="Minimum Polished QV to include bases in consensus sequence")
-    parser.add_argument("--ref_ext_len", default=C.REFERENCE_EXTENSION, type=int,
-                        help="Extend reference sequence by ref_ext_len base pairs on both ends.")
-    return parser
-
-
-def main():
-    """main"""
-    sys.exit(run(get_parser().parse_args(sys.argv[1:])))
-
-
-if __name__ == "__main__":
-    main()

@@ -9,18 +9,6 @@ from pbcore.io import FastaReader, FastaWriter, FastqReader, FastqWriter
 trim_desc = "Trim LQ sequences on both ends, where average MapQV of LQ sequences are less than min_qv." + \
             "If Output is out.fastq, also write to out.fasta."
 
-
-def get_parser():
-    """Set up and return argument parser."""
-    parser = ArgumentParser(trim_desc)
-    parser.add_argument("input_fn", help="Input FASTA or FASTQ filename")
-    parser.add_argument("output_fn", help="Output FASTA or FASTQ filename")
-    parser.add_argument("--windowsize", help="Compute average MapQV in windows of size", default=100, type=int)
-    parser.add_argument(
-        "--min_qv", help="Minimum average MapQV in windows to separate HQ and LQ sequences", default=20, type=int)
-    return parser
-
-
 def get_hq_start_end(seq, is_hq_f):
     """
     ..doctest:
@@ -99,16 +87,3 @@ def run_trim(i_fn, o_fn, min_qv, windowsize):
         trim_fastq(i_fn, o_fn, o_fa_fn, min_qv, windowsize)
     else:
         raise ValueError("Input and output must be both BED or VCF")
-
-
-def run(args):
-    run_trim(args.input_fn, args.output_fn, args.min_qv, args.windowsize)
-
-
-def main():
-    """main"""
-    sys.exit(run(get_parser().parse_args(sys.argv[1:])))
-
-
-if __name__ == "__main__":
-    main()

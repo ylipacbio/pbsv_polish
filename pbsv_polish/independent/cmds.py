@@ -4,6 +4,7 @@ from .utils import is_fastq
 from pbsv.independent.utils import _is_fmt, cmds_to_bash, execute, realpath, mv_cmd, autofmt, is_fasta
 from pbsv.run import svcall_cmd, ngmlrmap_cmd, sort_index_chain_bam_cmd
 
+
 def sort_index_bam_inline_cmd(in_fn, nproc=4, tmp_dir=None):
     """Sort and make index of sam or bam files inline"""
     sort_arg = '-T {tmp_dir}/srt' if tmp_dir is not None else ''
@@ -19,8 +20,10 @@ def _fn2fmtarg(fn):
     fnext2fmtarg = {"m0": "-m 0", "m4": "-m 4", "bam": "--bam"}
     return fnext2fmtarg[autofmt(fn, fnext2fmtarg.keys())[1]]
 
+
 def pbindex_cmd(fn):
     return 'pbindex {fn}'.format(fn=fn)
+
 
 def blasr_cmd(query_fn, target_fn, out_fn, nproc=8):
     return "blasr {q} {t} {fmt} --out {out_fn} --nproc {nproc} --maxMatch 15 --bestn 10 --hitPolicy randombest".\

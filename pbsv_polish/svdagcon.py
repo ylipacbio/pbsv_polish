@@ -258,8 +258,6 @@ def get_fasta_fn_from_subreads_bam_fn(bam_fn):
     return fasta_fn
 
 
-
-
 def get_region_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, work_dir):
     """
     a_fa_obj --- Fastafile a, which must contain sequence a_seq_name, and may contain other sequences

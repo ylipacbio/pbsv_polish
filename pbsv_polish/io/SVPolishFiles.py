@@ -4,8 +4,8 @@ from ..independent import Constants as C
 from pbsv.independent.utils import execute
 from ..utils import write_to_bash_file, qsub_to_sge_or_run_local
 from ..independent.cmds import (sv_pbdagcon_cmd, blasr_cmd,
-        sort_index_bam_inline_cmd, pbindex_cmd, variant_caller_cmd,
-        trim_lq_cmd, pbsv_run_and_transform_cmds)
+                                sort_index_bam_inline_cmd, pbindex_cmd, variant_caller_cmd,
+                                trim_lq_cmd, pbsv_run_and_transform_cmds)
 
 
 class SVPolishFiles(object):

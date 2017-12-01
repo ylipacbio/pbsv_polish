@@ -45,7 +45,7 @@ def choose_template_by_blasr(fasta_filename, out_filename, nproc=8,
     fd = FastaRandomReader(fasta_filename)
 
     cmd = "blasr --nproc {nproc} ".format(nproc=nproc) + \
-          "--max_score {score} ".format(score=max_score) + \
+          "--maxScore {score} ".format(score=max_score) + \
           "--maxLCPLength 15 --bestn 10 --nCandidates 50 " + \
           "-m 1 {fa} {fa} ".format(fa=fasta_filename) + \
           "--out {out} ".format(out=out_filename) + \

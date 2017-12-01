@@ -29,6 +29,7 @@ def add_collect_parser_options(p):
         _add_ref_ext_len_parser_option
     ]
     f = compose(*fs[::-1])
+    return f(p)
 
 
 def add_trim_parser_options(p):
@@ -39,6 +40,7 @@ def add_trim_parser_options(p):
         _add_min_qv_parser_option
     ]
     f = compose(*fs[::-1])
+    return f(p)
 
 
 def add_transform_parser_options(p):
@@ -47,6 +49,7 @@ def add_transform_parser_options(p):
         _add_out_bed_vcf_parser_option,
     ]
     f = compose(*fs[::-1])
+    return f(p)
 
 
 def add_svdagcon_parser_options(p):
@@ -54,13 +57,14 @@ def add_svdagcon_parser_options(p):
         _add_in_subreads_parser_option,
         _add_out_prefix_parser_option,
         _add_consensus_id_parser_option,
-        _add_svdagcon_optional_parser_option,
+        _add_svdagcon_optional_parser_option
     ]
     f = compose(*fs[::-1])
+    return f(p)
 
 
 def _add_in_subreads_parser_option(p):
-    p.add_arguments('input_subreads', type=validate_file, help='Input Subreads BAM or SubreadSet')
+    p.add_argument('input_subreads', type=validate_file, help='Input Subreads BAM or SubreadSet')
     return p
 
 

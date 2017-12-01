@@ -31,7 +31,7 @@ def blasr_cmd(query_fn, target_fn, out_fn, nproc=8):
         format(q=query_fn, t=target_fn, out_fn=out_fn, fmt=_fn2fmtarg(out_fn), nproc=nproc)
 
 
-def sv_pbdagcon_cmd(subreads_bam, output_prefix, output_seq_id, ref_fa):
+def svdagcon_cmd(subreads_bam, output_prefix, output_seq_id, ref_fa):
     return '{} {} {} {} --ref-fa {}'.format(SVDAGCON_ENTRY, subreads_bam, output_prefix, output_seq_id, ref_fa)
 
 

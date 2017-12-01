@@ -3,7 +3,7 @@ import os.path as op
 from ..independent import Constants as C
 from pbsv.independent.utils import execute
 from ..utils import write_to_bash_file, qsub_to_sge_or_run_local
-from ..independent.cmds import (sv_pbdagcon_cmd, blasr_cmd,
+from ..independent.cmds import (svdagcon_cmd, blasr_cmd,
                                 sort_index_bam_inline_cmd, pbindex_cmd, variant_caller_cmd,
                                 trim_lq_cmd, pbsv_run_and_transform_cmds)
 
@@ -33,13 +33,13 @@ class SVPolishFiles(object):
         self.subreads_bam = f([self._subreads_prefix, 'subreads.bam'])
         self.subreads_fa = f([self._subreads_prefix, 'subreads.fasta'])
 
-        self._dagcon_prefix = g('sv_pbdagcon')
+        self._dagcon_prefix = g('svdagcon')
         self.dagcon_fa = f([self._dagcon_prefix, 'fasta'])
 
         self._sv_ref_prefix = g('sv_ref_w_ext')
         self.sv_ref_fa = f([self._sv_ref_prefix, 'fasta'])
 
-        self.sr_dagcon_blasr_bam = g('sr.sv_pbdagcon.blasr.bam')
+        self.sr_dagcon_blasr_bam = g('sr.svdagcon.blasr.bam')
 
         self._polish_prefix = g('polish.qv%s' % self.min_qv)
         self.polish_fa = f([self._polish_prefix, 'fasta'])
@@ -96,8 +96,8 @@ class SVPolishFiles(object):
         sv_prefix -- a prefix string from a BedRecord obj, e.g., chr1_0_100_Deletion_-100
         """
         align_bam = self.sr_dagcon_blasr_bam
-        # c0 will generate sv_pbdagcon output consensus sequence of subreads with fai
-        c0 = sv_pbdagcon_cmd(self.subreads_bam, self._dagcon_prefix, 'subreads_consensus', self.sv_ref_fa)
+        # c0 will generate svdagcon output consensus sequence of subreads with fai
+        c0 = svdagcon_cmd(self.subreads_bam, self._dagcon_prefix, 'subreads_consensus', self.sv_ref_fa)
         c1 = blasr_cmd(query_fn=self.subreads_bam, target_fn=self.dagcon_fa, out_fn=align_bam, nproc=C.BLASR_NPROC)
         c2 = sort_index_bam_inline_cmd(align_bam)
         c3 = pbindex_cmd(align_bam)

@@ -6,3 +6,15 @@ def get_version():
 
 
 __version__ = get_version()
+
+def f(a, b):
+    return ' '.join([a, b])
+
+PBSVP = 'pbsvp'
+PBSVPUTIL = 'pbsvputil'
+
+POLISH_ENTRY = f(PBSVP, 'polish')
+COLLECT_ENTRY = f(PBSVP, 'collect')
+TRIM_ENTRY = f(PBSVPUTIL, 'trim-lq')
+SVDAGCON_ENTRY = f(PBSVPUTIL, 'svdagcon')
+TRANSFORM_ENTRY = f(PBSVPUTIL, 'transform-coordinate')

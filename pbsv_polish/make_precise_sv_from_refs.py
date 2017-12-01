@@ -28,7 +28,7 @@ from .independent import Constants as C
 from .io import SVPolishFiles
 from .utils import write_to_bash_file, get_query_subreads_from_alns, get_query_zmws_from_alns, bed2prefix, substr_fasta, basename_prefix_of_fn, get_ref_extension_for_sv, make_subreads_bam_of_zmws2, pbsv_run_and_transform_cmds
 from pbsv.libs import Fastafile
-from .sv_pbdagcon import get_region_of_seq_in_a_match_b
+from .svdagcon import get_region_of_seq_in_a_match_b
 
 import logging
 logging.basicConfig()

@@ -163,9 +163,9 @@ def subreads_of_a_zmw_in_ds(subreads_ds, zmw):
     zmws --- a list of zmws, e.g., e.g. ['movie1/100', 'movie2/200']
     """
     movie, zmw_int = get_movie_and_zmw_from_name(zmw)
-    rows = np.nonzero(np.logical_and(
+    rows = np.nonzero(np.logical_and( # pylint: disable=no-member
         subreads_ds.index.qId == subreads_ds.movieIds[movie],
-        subreads_ds.index.holeNumber == zmw_int))[0]  # pylint: disable=no-member
+        subreads_ds.index.holeNumber == zmw_int))[0]
     return subreads_ds[rows]
 
 
@@ -213,7 +213,7 @@ def trim_lq_cmd(in_fq, out_fq, out_fa, min_qv):
     # FASTA: simply remove lower case sequences on both ends
     # FASTQ: remove LQ sequences on both ends
     c0 = 'trim_lq {in_fq} {out_fq} --min_qv {min_qv}'.format(in_fq=in_fq, out_fq=out_fq, min_qv=min_qv)
-    return ' ; '.join([c0, c1])
+    return c0
 
 
 def sv_transform_coordinate_cmd(in_sv_fn, o_sv_fn):

@@ -17,6 +17,8 @@ logging.basicConfig(format='%(asctime) %(message)s')
 logging.getLogger().setLevel(logging.INFO)
 log = logging.getLogger()
 
+polish_desc = 'Polish input structural variants'
+
 
 def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa, make_subreads_bam, make_scripts, execute_scripts, min_qv, ref_ext_len, use_sge, report_f):
     """
@@ -60,20 +62,20 @@ def polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj
 
 
 def run(args):
-    in_dir, out_dir = args.in_dir, args.out_dir
-    _mkdir(out_dir)
+    run_polish(in_dir=args.in_dir, in_bed_fn=args.in_bed_fn, out_dir=args.out_dir,
+               min_qv=args.min_qv, ref_ext_len=args.ref_ext_len, use_sge=args.use_sge)
 
+def run_polish(in_dir, in_bed_fn, out_dir, min_qv, ref_ext_len, use_sge):
     aln_fn = op.join(in_dir, "alignments.bam")
     subreads_xml_fn = op.join(in_dir, "subreads.xml")
     genome_fa = op.join(in_dir, "genome.fa")
-    bed_fn = realpath(args.in_bed_fn)
     coverage_fn = op.join(out_dir, 'coverage.txt')
 
     reference_fasta_obj = Fastafile(genome_fa)
     ofile_obj = open(coverage_fn, 'w')
     alnfile_obj = SingleFileOpener(aln_fn).alignfile
     subreads_ds_obj = SubreadSet(subreads_xml_fn)
-    bedreader_obj = BedReader(bed_fn)  # get_sv_from_non_pbsv_bed(bed_fn)
+    bedreader_obj = BedReader(in_bed_fn)
     samples = bedreader_obj.samples
 
     report_fp = open(op.join(out_dir, 'report.log'), 'w')
@@ -89,7 +91,7 @@ def run(args):
         work_dir = realpath(op.join(out_dir, sv_prefix))
         log.info("Processing sv %s" % sv_prefix)
         polish_a_sv(bed_record, alns, work_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa=True, make_subreads_bam=True,
-                    make_scripts=True, execute_scripts=False, min_qv=args.min_qv, ref_ext_len=args.ref_ext_len, use_sge=args.use_sge, report_f=report_f)
+                    make_scripts=True, execute_scripts=False, min_qv=min_qv, ref_ext_len=ref_ext_len, use_sge=use_sge, report_f=report_f)
 
     reference_fasta_obj.close()
     ofile_obj.close()
@@ -101,7 +103,7 @@ def run(args):
 
 def get_parser():
     """Set up and return argument parser."""
-    parser = argparse.ArgumentParser("Polish structural variants in BED",
+    parser = argparse.ArgumentParser(polish_desc,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("in_dir", type=str, help="Input FASTA or FASTQ filename")
     parser.add_argument("in_bed_fn", type=str, help="Structural variants in BED file")

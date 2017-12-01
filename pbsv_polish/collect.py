@@ -13,11 +13,13 @@ from .utils import bed2prefix, write_to_bash_file, substr_fasta, get_ref_extensi
 
 log = logging.getLogger()
 
+collect_desc = 'Collect polished structural variants in directory.'
 
 def run(args):
-    in_bed_fn, out_dir, collected_bed_fn = args.in_bed_fn,  args.out_dir, args.collected_bed_fn
-    min_qv = args.min_qv
-    ref_ext_len = args.ref_ext_len
+    run_collect(args.in_bed_fn,  args.out_dir, args.collected_bed_fn, args.min_qv, args.ref_ext_len)
+
+
+def run_collect(in_bed_fn, out_dir, collected_bed_fn, min_qv, ref_ext_len):
     reader = BedReader(in_bed_fn)
     writer = BedWriter(collected_bed_fn, samples=reader.samples)
 
@@ -47,7 +49,7 @@ def run(args):
 
 def get_parser():
     """Set up and return argument parser."""
-    parser = ArgumentParser("")
+    parser = ArgumentParser(collect_desc)
     parser.add_argument("in_bed_fn", type=str, help="Structural variants in BED file")
     parser.add_argument("out_dir", type=str, help="Output Directory")
     parser.add_argument("collected_bed_fn", type=str, help="Polished structural variants in BED file")

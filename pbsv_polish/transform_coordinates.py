@@ -6,10 +6,11 @@ import sys
 from pbsv.independent.utils import is_bed, is_vcf
 from pbsv.io.VcfIO import VcfReader, VcfWriter, VcfRecord, BedReader, BedWriter, BedRecord
 
+transform_desc = 'Transform structural variants coordinates from substring to chromosome.'
 
 def get_parser():
     """Set up and return argument parser."""
-    parser = ArgumentParser()
+    parser = ArgumentParser(transform_desc)
     parser.add_argument("input_sv_fn", help="Input BED or VCF filename")
     parser.add_argument("output_sv_fn", help="Output BED or VCF filename, format must be the same as input")
     return parser
@@ -76,7 +77,7 @@ def get_chrom_start_end_from_string(s):
         raise ValueError("String %s must be of format '{chrom}__substr__{start}_{end}'" % s)
 
 
-def transform_coordinates(i_fn, o_fn):
+def run_transform(i_fn, o_fn):
     """Transform coordinates of all structural variants in i_fn to o_fn"""
     if not (all(is_bed(fn) for fn in [i_fn, o_fn]) or all(is_vcf(fn) for fn in [i_fn, o_fn])):
         raise ValueError("Input and output must be both BED or VCF")
@@ -88,7 +89,7 @@ def transform_coordinates(i_fn, o_fn):
 
 def run(args):
     i_fn, o_fn = args.input_sv_fn, args.output_sv_fn
-    transform_coordinates(i_fn, o_fn)
+    run_transform(i_fn, o_fn)
 
 
 def main():

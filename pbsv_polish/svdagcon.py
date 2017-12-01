@@ -26,12 +26,14 @@ from pbsv.__init__ import get_version
 from .utils import *
 
 
+svdagcon_desc = 'Call pbdagcon to make consensus sequence of a structural variant'
+
 class AlignGraphUtilError(Exception):
     """Align Group Util Error Class"""
 
 
 def choose_template_by_blasr(fasta_filename, out_filename, nproc=8,
-                             maxScore=-1000, min_number_reads=1):
+                             max_score=-1000, min_number_reads=1):
     """
     Choose the best template for gcon reference
     Pick the one that has the highest sum of score to others
@@ -41,7 +43,7 @@ def choose_template_by_blasr(fasta_filename, out_filename, nproc=8,
     fd = FastaRandomReader(fasta_filename)
 
     cmd = "blasr --nproc {nproc} ".format(nproc=nproc) + \
-          "--maxScore {score} ".format(score=maxScore) + \
+          "--max_score {score} ".format(score=max_score) + \
           "--maxLCPLength 15 --bestn 10 --nCandidates 50 " + \
           "-m 1 {fa} {fa} ".format(fa=fasta_filename) + \
           "--out {out} ".format(out=out_filename) + \
@@ -157,7 +159,7 @@ def make_aln_input_to_ref(fasta_filename, ref_filename,
 
 
 def pbdagcon_wrapper(fasta_filename, output_prefix, consensus_name, nproc=8,
-                     maxScore=-1000, min_seq_len=300, use_first_seq_if_fail=True):
+                     max_score=-1000, min_seq_len=300, use_first_seq_if_fail=True):
     """
     (1) Find the best seed as reference
     (2) Align rest to seed
@@ -171,7 +173,7 @@ def pbdagcon_wrapper(fasta_filename, output_prefix, consensus_name, nproc=8,
         out_filename_m1 = output_prefix + ".saln.m1"
         ref = choose_template_by_blasr(fasta_filename=fasta_filename,
                                        out_filename=out_filename_m1,
-                                       nproc=nproc, maxScore=maxScore)
+                                       nproc=nproc, max_score=max_score)
         os.remove(out_filename_m1)
 
         with open(ref_filename, 'w') as f:
@@ -227,12 +229,12 @@ def make_fai(fn):
 
 def get_parser():
     """Set up and return argument parser."""
-    parser = ArgumentParser()
+    parser = ArgumentParser(svdagcon_desc)
     parser.add_argument("input_subreads_bam", help="Input fasta filename")
     parser.add_argument("output_prefix", help="Output filename prefix (ex: sv_consensus)")
     parser.add_argument("consensus_id", help="Consensus sequence ID name (ex: chr1_100_100_Insertion)")
     parser.add_argument("--nproc", default=8, type=int, help="Number of processes")
-    parser.add_argument("--maxScore", default=-1000, type=int, help="blasr maxScore")
+    parser.add_argument("--max_score", default=-1000, type=int, help="blasr max_score")
     parser.add_argument("--use_first_seq_if_fail", default=True, action='store_false',
                         help="Use the first sequence as backup reference if pbdagcon fails")
     parser.add_argument("--ref_fa", type=str,
@@ -337,11 +339,14 @@ def _get_target_span_regions_from_m4(m4_fn):
 def run(args):
     """Build consesus sequences from subreads.bam input using pbdagcon."""
     input_subreads_bam, ref_fa, output_prefix, consensus_id = args.input_subreads_bam, args.ref_fa, args.output_prefix, args.consensus_id,
-    nproc, maxScore, use_first_seq_if_fail = args.nproc, args.maxScore, args.use_first_seq_if_fail
+    nproc, max_score, use_first_seq_if_fail = args.nproc, args.max_score, args.use_first_seq_if_fail
+    run_svdagcon(args.input_subreads_bam, args.ref_fa, args.output_prefix, args.consensus_id, nproc, max_score, use_first_seq_if_fail)
 
+
+def run_svdagcon(input_subreads_bam, ref_fa, output_prefix, consensus_id, nproc, max_score, use_first_seq_if_fail):
     sr_fasta = get_fasta_fn_from_subreads_bam_fn(input_subreads_bam)  # convert subreads.bam to subread.fasta
     pbdagcon_wrapper(fasta_filename=sr_fasta, output_prefix=output_prefix + '.all', consensus_name=consensus_id,
-                     nproc=nproc, maxScore=maxScore, use_first_seq_if_fail=use_first_seq_if_fail)
+                     nproc=nproc, max_score=max_score, use_first_seq_if_fail=use_first_seq_if_fail)
 
     in_fa_fn, out_fa_fn = output_prefix + '.all.fasta', output_prefix + '.fasta'
     if ref_fa:  # use reference fasta to bound substr

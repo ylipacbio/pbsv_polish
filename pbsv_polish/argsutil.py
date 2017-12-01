@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import os
 import os.path as op
 from pbsv.__utils import (get_default_argparser, setup_log, main_runner,
                           compose, subparser_builder, args_executer)
@@ -33,7 +33,6 @@ def add_polish_parser_options(p):
 
 def add_collect_parser_options(p):
     fs = [
-        _add_in_bed_vcf_parser_option,
         _add_work_dir_parser_option,
         _add_out_bed_vcf_parser_option,
         _add_min_qv_parser_option,

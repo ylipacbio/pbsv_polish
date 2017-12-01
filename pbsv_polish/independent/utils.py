@@ -8,3 +8,5 @@ from pbsv.independent.utils import _is_fmt, cmds_to_bash, execute, realpath, aut
 def is_fastq(fn):
     """Return true if a file extension is fq or fastq"""
     return _is_fmt(fn, ["fq", "fastq"])
+
+

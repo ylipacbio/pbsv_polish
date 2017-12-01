@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-from .utils import is_fastq
 from pbsv.independent.utils import _is_fmt, cmds_to_bash, execute, realpath, mv_cmd, autofmt, is_fasta
 from pbsv.run import svcall_cmd, ngmlrmap_cmd, sort_index_chain_bam_cmd
+from .Constants import Constants as C
+from .utils import is_fastq
 from ..__init__ import TRANSFORM_ENTRY, TRIM_ENTRY, SVDAGCON_ENTRY
 
 
@@ -53,7 +54,7 @@ def sv_transform_coordinate_cmd(in_sv_fn, o_sv_fn):
     return '{entry} {i} {o}'.format(entry=TRANSFORM_ENTRY, i=in_sv_fn, o=o_sv_fn)
 
 
-def make_input_json_cmd(bam_fn, json_fn, sample='Consensus'):
+def make_input_json_cmd(bam_fn, json_fn, sample):
     """CMD which creates a json file with content [['path_to_bam', 'sample']], which will later
     be used as pbsv call input.
     """
@@ -76,7 +77,7 @@ def pbsv_run_and_transform_cmds(reads_fn, ref_fa_fn, cfg_fn, o_bam_fn, o_bed_fn,
     c1 = sort_index_bam_inline_cmd(o_bam_fn)
 
     json_fn = o_prefix + '.json'  # create input json for `pbsv call`
-    c2 = make_input_json_cmd(o_bam_fn, json_fn, 'Consensus')
+    c2 = make_input_json_cmd(o_bam_fn, json_fn, C.CONSENSUS_SAMPLE)
 
     tmp_bed = o_bed_fn + '.use_substr_as_chrom.bed'
     c3 = svcall_cmd(ref_fn=ref_fa_fn, in_bam=json_fn, out_bed=tmp_bed, cfg=cfg_fn)

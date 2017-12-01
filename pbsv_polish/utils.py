@@ -6,7 +6,7 @@ import numpy as np
 from pbcore.io import FastaWriter, SubreadSet
 from pbsv.libs import Fastafile, AlignmentFile
 from pbsv.io.bamstream import iterator_of_alignments_in_ref_regions
-from pbsv.io.VcfIO import BedReader, BedRecord
+from pbsv.io.VcfIO import BedRecord
 from pbsv.independent.common import RefRegion, SvType, SvFmts, SvFmt
 from pbsv.independent.utils import _is_fmt, cmds_to_bash, execute, realpath, autofmt, is_fasta
 from .independent import Constants as C
@@ -249,3 +249,30 @@ def get_sv_from_non_pbsv_bed(in_bed):
         ret.append(BedRecord(chrom=chr, start=start, end=end, sv_id='.', sv_type=svtype,
                              sv_len=svlen, alt=None, annotations=None,   fmts=fmts))
     return ret
+
+
+class ActionRecord(object):
+    """
+    Simple action record class to record actions taken for a structural variant
+    """
+    SEP = '\t'
+    HEADER = SEP.join(['name', 'action', 'ad', 'dp', 'comment'])
+    SKIP, PASS, REJECTED, POLIHSED = ['SKIP', 'PASS', 'REJECTED', 'POLISHED']
+
+    def __init__(self, name, action, ad, dp, comment):
+        self.name, self.action, self.ad, self.dp, self.comment = name, action, int(ad), int(dp), comment
+
+    def __str__(self):
+        return self.SEP.join([str(s) for s in [self.name, self.action, self.ad, self.dp, self.comment]])
+
+    @classmethod
+    def from_obj(cls, svobj, action, comment):
+        ad = sum([svobj.fmts[sample].ad for sample in svobj.samples])
+        dp = sum([svobj.fmts[sample].dp for sample in svobj.samples])
+        return ActionRecord(bed2prefix(svobj), action, ad, dp, comment)
+
+    @classmethod
+    def from_str(cls, line):
+        name, action, ad, dp, comment = line.split(cls.SEP)[0:5]
+        return ActionRecord(name, action, ad, dp, comment)
+

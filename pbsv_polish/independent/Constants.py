@@ -10,3 +10,4 @@ class Constants(object):
     MIN_POLISH_COVERAGE = 5
     BLASR_NPROC = 4
     VARIANT_CALLER_NPROC = 4
+    CONSENSUS_SAMPLE = 'CONSENSUS'

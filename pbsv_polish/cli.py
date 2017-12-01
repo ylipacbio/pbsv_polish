@@ -45,8 +45,7 @@ def _args_run_collect(args):
     """Run `pbsvp collect`"""
     log.info("Running `{}`".format(COLLECT_ENTRY))
     log.debug('Locals={}'.format(locals()))
-    run_collect(in_bed_fn=args.in_bed_or_vcf_fn, work_dir=args.work_dir,
-                collected_bed_fn=args.out_bed_or_vcf_fn,
+    run_collect(work_dir=args.work_dir, collected_bed_fn=args.out_bed_or_vcf_fn,
                 min_qv=args.min_qv, ref_ext_len=args.ref_ext_len)
     return 0
 

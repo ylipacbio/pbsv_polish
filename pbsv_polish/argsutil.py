@@ -75,11 +75,11 @@ def add_svdagcon_parser_options(p):
 
 
 def _add_subreads_bam_parser_option(p):
-    p.add_argument('subreads_bam', type=validate_file, help='Input Subreads BAM or SubreadSet')
+    p.add_argument('subreads_bam', type=validate_file, help='Subreads BAM or SubreadSet')
     return p
 
 def _add_alignment_bam_parser_option(p):
-    p.add_argument('alignments_bam', type=validate_file, help='Input Subreads BAM or SubreadSet')
+    p.add_argument('alignments_bam', type=validate_file, help='Alignments BAM')
     return p
 
 

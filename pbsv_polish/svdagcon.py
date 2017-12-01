@@ -24,6 +24,7 @@ from pbsv.libs import AlignmentFile, Fastafile
 from pbtranscript.io import FastaRandomReader, BLASRM4Reader
 from pbsv.__init__ import get_version
 from .utils import *
+from .independent.cmds import blasr_cmd
 
 
 svdagcon_desc = 'Call pbdagcon to make consensus sequence of a structural variant'
@@ -257,7 +258,6 @@ def get_fasta_fn_from_subreads_bam_fn(bam_fn):
     return fasta_fn
 
 
-from .utils import blasr_cmd
 
 
 def get_region_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, work_dir):

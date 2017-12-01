@@ -26,7 +26,9 @@ from pbsv.io.VcfIO import BedReader
 
 from .independent import Constants as C
 from .io import SVPolishFiles
-from .utils import write_to_bash_file, get_query_subreads_from_alns, get_query_zmws_from_alns, bed2prefix, substr_fasta, basename_prefix_of_fn, get_ref_extension_for_sv, make_subreads_bam_of_zmws2, pbsv_run_and_transform_cmds
+from .utils import (write_to_bash_file, get_query_subreads_from_alns, get_query_zmws_from_alns,
+        bed2prefix, substr_fasta, basename_prefix_of_fn, get_ref_extension_for_sv, make_subreads_bam_of_zmws2)
+from .independent.cmds import pbsv_run_and_transform_cmds
 from pbsv.libs import Fastafile
 from .svdagcon import get_region_of_seq_in_a_match_b
 
@@ -36,7 +38,9 @@ logging.getLogger().setLevel(logging.INFO)
 log = logging.getLogger()
 
 
-def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa, make_subreads_bam, make_scripts, execute_scripts, min_qv, ref_ext_len, use_sge):
+def polish_a_sv(bed_record, alns, out_dir, subreads_ds_obj,
+                reference_fasta_obj, make_reference_fa, make_subreads_bam,
+                make_scripts, execute_scripts, min_qv, ref_ext_len, use_sge):
     """
     Given a structural variant (as bed_record) and its supportive alignments, polish the given structural variant.
     * if make_reference_fa is True, generate a substr of chromosome as reference for this structural variant

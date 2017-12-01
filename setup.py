@@ -42,13 +42,8 @@ setup(
     author_email='awenger@pacificbiosciences.com, yli@pacificbiosciences.com',
     description='PacBio structure variants polishing tool.',
     entry_points={'console_scripts': [
-        'sv_pbdagcon = pbsv_polish.sv_pbdagcon:main',
-        'polish_sv = pbsv_polish.polish_sv:main',
-        'collect_polished_sv = pbsv_polish.collect_polished_sv:main',
-        'substr_fasta = pbsv_polish.substr_fasta:main',
-        'make_precise_sv_from_refs = pbsv_polish.make_precise_sv_from_refs:main',
-        'sv_transform_coordinates= pbsv_polish.transform_coordinates:main',
-        'trim_lq= pbsv_polish.trim_lq:main'
+        'pbsvp = pbsv_polish.cli:pbsvp_main',
+        'pbsvputil = pbsv_polish.cli:pbsvputil_main',
     ]},
     install_requires=_get_requirements(_get_local_file(_REQUIREMENTS_FILE)),
     tests_require=['pytest'],

@@ -10,7 +10,7 @@ from pbsv.cli import _mkdir
 from pbsv.io.bamstream import SingleFileOpener
 from .independent import Constants as C
 from .io import SVPolishFiles
-from .utils import *
+from .utils import BedReader, Fastafile, SubreadSet, bed2prefix, get_query_subreads_from_alns, get_query_zmws_from_alns, get_ref_extension_for_sv, make_subreads_bam_of_zmws2, substr_fasta, yield_alns_from_bed_file
 
 import logging
 logging.basicConfig(format='%(asctime) %(message)s')

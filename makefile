@@ -20,7 +20,7 @@ test:
 	# Relatively fast tests
 	py.test ${MY_NOSE_FLAGS} tests/itest/test_*.py
 autofmt:
-	find pbsv_polish -type f -name '*.py' | xargs autoflake --in-place --remove-unused-variables
+	find pbsv_polish -type f -name '*.py' | xargs autoflake --in-place --remove-unused-variables --expand-star-imports
 	find pbsv_polish -type f -name '*.py' | xargs autopep8  --in-place --max-line-length 120
 vulture:
 	vulture pbsv_polish/

@@ -23,7 +23,7 @@ from pbsv.libs import AlignmentFile, Fastafile
 
 from pbtranscript.io import FastaRandomReader, BLASRM4Reader
 from pbsv.__init__ import get_version
-from .utils import *
+from .utils import apply_operator, assert_fasta_has_one_seq, basename_prefix_of_fn, substr_fasta, zmw_from_subread
 from .independent.cmds import blasr_cmd
 
 

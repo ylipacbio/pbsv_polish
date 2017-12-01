@@ -1,18 +1,28 @@
 #!/usr/bin/env python
 
-from .independent.Constants import Constants as C
-from .independent.utils import mkdir
+import os.path as op
 from pbsv.__utils import (get_default_argparser, setup_log, main_runner,
-                          compose, subparser_builder, validate_file, args_executer)
-from pbsv.run import _mkdir
+                          compose, subparser_builder, args_executer)
+from .independent.Constants import Constants as C
 
+def mkdir(path):
+    if not op.isdir(path):
+        os.makedirs(path)
+    return path
+
+def validate_file(fn):
+    if op.exists(fn):
+        return fn
 
 def add_polish_parser_options(p):
     """Add `pbsvp polish` parser options"""
     fs = [
-        _add_in_dir_parser_option,
+        _add_genome_fa_parser_option,
+        _add_subreads_bam_parser_option,
+        _add_alignment_bam_parser_option,
         _add_in_bed_vcf_parser_option,
         _add_out_dir_parser_option,
+        _add_min_coverage_parser_option,
         _add_min_qv_parser_option,
         _add_ref_ext_len_parser_option,
         _add_use_sge_parser_option
@@ -24,7 +34,7 @@ def add_polish_parser_options(p):
 def add_collect_parser_options(p):
     fs = [
         _add_in_bed_vcf_parser_option,
-        _add_out_dir_parser_option,
+        _add_work_dir_parser_option,
         _add_out_bed_vcf_parser_option,
         _add_min_qv_parser_option,
         _add_ref_ext_len_parser_option
@@ -55,7 +65,7 @@ def add_transform_parser_options(p):
 
 def add_svdagcon_parser_options(p):
     fs = [
-        _add_in_subreads_parser_option,
+        _add_subreads_bam_parser_option,
         _add_out_prefix_parser_option,
         _add_consensus_id_parser_option,
         _add_svdagcon_optional_parser_option
@@ -64,8 +74,12 @@ def add_svdagcon_parser_options(p):
     return f(p)
 
 
-def _add_in_subreads_parser_option(p):
-    p.add_argument('input_subreads', type=validate_file, help='Input Subreads BAM or SubreadSet')
+def _add_subreads_bam_parser_option(p):
+    p.add_argument('subreads_bam', type=validate_file, help='Input Subreads BAM or SubreadSet')
+    return p
+
+def _add_alignment_bam_parser_option(p):
+    p.add_argument('alignments_bam', type=validate_file, help='Input Subreads BAM or SubreadSet')
     return p
 
 
@@ -94,15 +108,23 @@ def _add_in_bed_parser_option(p):
     return p
 
 
+def _add_work_dir_parser_option(p):
+    p.add_argument('work_dir', type=str, help="Working Directory")
+    return p
+
 def _add_out_dir_parser_option(p):
     p.add_argument('out_dir', type=mkdir, help="Output Directory")
     return p
 
-
-def _add_in_dir_parser_option(p):
-    p.add_argument('in_dir', type=str, help="Input Directory")
+def _add_genome_fa_parser_option(p):
+    p.add_argument('genome_fa', type=validate_file, help="Reference Genome FASTA")
     return p
 
+
+def _add_min_coverage_parser_option(p):
+    p.add_argument('--min-coverage', type=int, default=C.MIN_POLISH_COVERAGE,
+                   help="Minimum number of supportive reads to polish a strucutural variant")
+    return p
 
 def _add_min_qv_parser_option(p):
     p.add_argument("--min-qv", default=C.MIN_POLISH_QV, type=int,

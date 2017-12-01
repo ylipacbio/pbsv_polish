@@ -34,8 +34,10 @@ def _args_run_polish(args):
     """Run `pbsvp polish`"""
     log.info("Running `{}`".format(POLISH_ENTRY))
     log.debug('Locals={}'.format(locals()))
-    run_polish(in_dir=args.in_dir, in_bed_fn=args.in_bed_or_vcf_fn, out_dir=args.out_dir,
-               min_qv=args.min_qv, ref_ext_len=args.ref_ext_len, use_sge=args.use_sge)
+    run_polish(genome_fa=args.genome_fa, subreads_xml_fn=args.subreads_bam, aln_fn=args.alignments_bam,
+               in_bed_fn=args.in_bed_or_vcf_fn, out_dir=args.out_dir,
+               min_coverage=args.min_coverage, min_qv=args.min_qv,
+               ref_ext_len=args.ref_ext_len, use_sge=args.use_sge)
     return 0
 
 
@@ -43,7 +45,7 @@ def _args_run_collect(args):
     """Run `pbsvp collect`"""
     log.info("Running `{}`".format(COLLECT_ENTRY))
     log.debug('Locals={}'.format(locals()))
-    run_collect(in_bed_fn=args.in_bed_or_vcf_fn, out_dir=args.out_dir,
+    run_collect(in_bed_fn=args.in_bed_or_vcf_fn, work_dir=args.work_dir,
                 collected_bed_fn=args.out_bed_or_vcf_fn,
                 min_qv=args.min_qv, ref_ext_len=args.ref_ext_len)
     return 0
@@ -60,7 +62,7 @@ def _args_run_trim(args):
 def _args_run_svdagcon(args):
     log.info("Running `{}`".format(SVDAGCON_ENTRY))
     log.debug('Locals={}'.format(locals()))
-    run_svdagcon(input_subreads_bam=args.input_subreads, ref_fa=args.ref_fa,
+    run_svdagcon(input_subreads_bam=args.subreads_bam, ref_fa=args.ref_fa,
                  output_prefix=args.output_prefix, consensus_id=args.consensus_id,
                  nproc=args.nproc, max_score=args.max_score,
                  use_first_seq_if_fail=args.use_first_seq_if_fail)

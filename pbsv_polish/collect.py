@@ -14,25 +14,29 @@ log = logging.getLogger()
 collect_desc = 'Collect polished structural variants in directory.'
 
 
-def run(args):
-    run_collect(args.in_bed_fn,  args.out_dir, args.collected_bed_fn, args.min_qv, args.ref_ext_len)
-
-
-def run_collect(in_bed_fn, out_dir, collected_bed_fn, min_qv, ref_ext_len):
+def run_collect(in_bed_fn, work_dir,
+                polished_bed_fn, rejected_bed_fn, insufficient_bed_fn,
+                min_qv, ref_ext_len):
+    """
+    Collect polished structural variants in work_dir.
+    Write structural variants which do not have enough coverage, insufficient_coverage.bed.
+    Write rejected structural variants to rejected.bed.
+    Write polished structural variants to polished.bed.
+    """
     reader = BedReader(in_bed_fn)
-    writer = BedWriter(collected_bed_fn, samples=reader.samples)
+    p_writer = BedWriter(polished_bed_fn, samples=reader.samples)
+    r_writer = BedWriter(rejected_bed_fn, samples=reader.samples)
+    i_writer = BedWriter(insufficient_bed_fn, samples=reader.samples)
 
     for bed_record in reader:
         sv_prefix = bed2prefix(bed_record)
         log.info("Collecting polished SV for %s" % sv_prefix)
-        data_dir = realpath(op.join(out_dir, sv_prefix))
-        svp_files_obj = SVPolishFiles(root_dir=data_dir, min_qv=min_qv, ref_ext_len=ref_ext_len)
-        polished_bed_fn = svp_files_obj.polish_ngmlr_bed
-
-        if not op.exists(polished_bed_fn):
+        data_dir = realpath(op.join(work_dir, sv_prefix))
+        polished_bed_fn = SVPolishFiles(root_dir=data_dir, min_qv=min_qv, ref_ext_len=ref_ext_len).polish_ngmlr_bed
+        if not op.exists(data_dir):
             log.info("No Polished structural variant detected, use the original one: %s " %
                      ' '.join(str(bed_record).split()[0:5]))
-            writer.writeRecord(bed_record.to_str(reader.samples))
+            i_writer.writeRecord(bed_record.to_str(reader.samples))
         else:
             polished_bed_records = [r for r in BedReader(polished_bed_fn)]
             if len(polished_bed_records) == 0:
@@ -43,4 +47,7 @@ def run_collect(in_bed_fn, out_dir, collected_bed_fn, min_qv, ref_ext_len):
                 for r in polished_bed_records:
                     writer.writeRecord(r.to_str(reader.samples))
 
-    writer.close()
+    reader.close()
+    p_writer.close()
+    r_writer.close()
+    i_writer.close()

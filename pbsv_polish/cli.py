@@ -11,17 +11,14 @@ Define `pbsvputil`, utils for `pbsvp`, including
     pbsvputil svdagcon
 """
 
-import os
-import os.path as op
 import sys
 import logging
-import json
 from .__init__ import (get_version, POLISH_ENTRY, COLLECT_ENTRY, TRIM_ENTRY,
-        SVDAGCON_ENTRY, TRANSFORM_ENTRY)
+                       SVDAGCON_ENTRY, TRANSFORM_ENTRY)
 from pbsv.__utils import (get_default_argparser, setup_log, main_runner,
-        compose, subparser_builder, validate_file, args_executer)
+                          compose, subparser_builder, validate_file, args_executer)
 from .argsutil import (add_polish_parser_options,  add_collect_parser_options,
-        add_trim_parser_options, add_transform_parser_options, add_svdagcon_parser_options)
+                       add_trim_parser_options, add_transform_parser_options, add_svdagcon_parser_options)
 from .polish import polish_desc, run_polish
 from .collect import collect_desc, run_collect
 from .trim_lq import trim_desc, run_trim
@@ -82,6 +79,7 @@ def pbsvp_get_parser():
     desc = "PacBio Structural Variants Polish Tool Suite"
     p = get_default_argparser(version=get_version(), description=desc)
     sp = p.add_subparsers(help='commands')
+
     def builder(subparser_id, description, options_func, exe_func, epilog=None):
         """subparser builder"""
         subparser_builder(sp, subparser_id, description, options_func, exe_func, epilog)

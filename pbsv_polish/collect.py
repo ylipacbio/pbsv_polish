@@ -15,6 +15,7 @@ log = logging.getLogger()
 
 collect_desc = 'Collect polished structural variants in directory.'
 
+
 def run(args):
     run_collect(args.in_bed_fn,  args.out_dir, args.collected_bed_fn, args.min_qv, args.ref_ext_len)
 

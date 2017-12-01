@@ -7,8 +7,10 @@ def get_version():
 
 __version__ = get_version()
 
+
 def f(a, b):
     return ' '.join([a, b])
+
 
 PBSVP = 'pbsvp'
 PBSVPUTIL = 'pbsvputil'

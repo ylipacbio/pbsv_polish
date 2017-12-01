@@ -8,6 +8,7 @@ from pbsv.io.VcfIO import VcfReader, VcfWriter, VcfRecord, BedReader, BedWriter,
 
 transform_desc = 'Transform structural variants coordinates from substring to chromosome.'
 
+
 def get_parser():
     """Set up and return argument parser."""
     parser = ArgumentParser(transform_desc)

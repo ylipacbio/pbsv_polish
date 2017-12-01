@@ -28,6 +28,7 @@ from .utils import *
 
 svdagcon_desc = 'Call pbdagcon to make consensus sequence of a structural variant'
 
+
 class AlignGraphUtilError(Exception):
     """Align Group Util Error Class"""
 
@@ -340,7 +341,8 @@ def run(args):
     """Build consesus sequences from subreads.bam input using pbdagcon."""
     input_subreads_bam, ref_fa, output_prefix, consensus_id = args.input_subreads_bam, args.ref_fa, args.output_prefix, args.consensus_id,
     nproc, max_score, use_first_seq_if_fail = args.nproc, args.max_score, args.use_first_seq_if_fail
-    run_svdagcon(args.input_subreads_bam, args.ref_fa, args.output_prefix, args.consensus_id, nproc, max_score, use_first_seq_if_fail)
+    run_svdagcon(args.input_subreads_bam, args.ref_fa, args.output_prefix,
+                 args.consensus_id, nproc, max_score, use_first_seq_if_fail)
 
 
 def run_svdagcon(input_subreads_bam, ref_fa, output_prefix, consensus_id, nproc, max_score, use_first_seq_if_fail):

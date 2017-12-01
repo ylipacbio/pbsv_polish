@@ -65,6 +65,7 @@ def run(args):
     run_polish(in_dir=args.in_dir, in_bed_fn=args.in_bed_fn, out_dir=args.out_dir,
                min_qv=args.min_qv, ref_ext_len=args.ref_ext_len, use_sge=args.use_sge)
 
+
 def run_polish(in_dir, in_bed_fn, out_dir, min_qv, ref_ext_len, use_sge):
     aln_fn = op.join(in_dir, "alignments.bam")
     subreads_xml_fn = op.join(in_dir, "subreads.xml")

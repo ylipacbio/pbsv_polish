@@ -23,8 +23,9 @@ def add_polish_parser_options(p):
 
 def add_collect_parser_options(p):
     fs = [
-        _add_in_bed_parser_option,
+        _add_in_bed_vcf_parser_option,
         _add_out_dir_parser_option,
+        _add_out_bed_vcf_parser_option,
         _add_min_qv_parser_option,
         _add_ref_ext_len_parser_option
     ]

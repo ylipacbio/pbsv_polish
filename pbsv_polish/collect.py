@@ -32,18 +32,18 @@ def run_collect(in_bed_fn, out_dir, collected_bed_fn, min_qv, ref_ext_len):
         polished_bed_fn = svp_files_obj.polish_ngmlr_bed
 
         if not op.exists(polished_bed_fn):
-            print("No Polished structural variant detected, use the original one: %s " %
+            log.info("No Polished structural variant detected, use the original one: %s " %
                   ' '.join(str(bed_record).split()[0:5]))
-            writer.writeRecord(bed_record)
+            writer.writeRecord(bed_record.to_str(reader.samples))
         else:
             polished_bed_records = [r for r in BedReader(polished_bed_fn)]
             if len(polished_bed_records) == 0:
-                print("No Polished structural variant detected, use the original one: %s " %
+                log.info("No Polished structural variant detected, use the original one: %s " %
                       ' '.join(str(bed_record).split()[0:5]))
-                writer.writeRecord(bed_record)
+                writer.writeRecord(bed_record.to_str(reader.samples))
             else:
                 for r in polished_bed_records:
-                    writer.writeRecord(r)
+                    writer.writeRecord(r.to_str(reader.samples))
 
     writer.close()
 

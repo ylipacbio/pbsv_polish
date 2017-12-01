@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from .independent.Constants import Constants as C
+from .independent.utils import mkdir
 from pbsv.__utils import (get_default_argparser, setup_log, main_runner,
                           compose, subparser_builder, validate_file, args_executer)
 from pbsv.run import _mkdir
@@ -9,13 +10,13 @@ from pbsv.run import _mkdir
 def add_polish_parser_options(p):
     """Add `pbsvp polish` parser options"""
     fs = [
+        _add_in_dir_parser_option,
         _add_in_bed_vcf_parser_option,
         _add_out_dir_parser_option,
-        _add_out_bed_vcf_parser_option,
         _add_min_qv_parser_option,
-        _add_ref_ext_len_parser_option
+        _add_ref_ext_len_parser_option,
+        _add_use_sge_parser_option
     ]
-    #f = compose(*fs)
     f = compose(*fs[::-1])
     return f(p)
 
@@ -89,7 +90,7 @@ def _add_in_bed_parser_option(p):
 
 
 def _add_out_dir_parser_option(p):
-    p.add_argument('out_dir', type=_mkdir, help="Output Directory")
+    p.add_argument('out_dir', type=mkdir, help="Output Directory")
     return p
 
 

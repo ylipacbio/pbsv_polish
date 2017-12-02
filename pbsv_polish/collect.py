@@ -3,7 +3,7 @@ import os.path as op
 import logging
 
 from pbsv.independent.utils import execute, realpath
-from pbsv.io.VcfIO import BedReader, BedWriter
+from pbsv.io.VcfIO import BedReader, BedRecord, BedWriter
 
 from .independent import Constants as C
 from .io import SVPolishFiles
@@ -12,6 +12,18 @@ from .utils import bed2prefix, write_to_bash_file, substr_fasta, get_ref_extensi
 log = logging.getLogger()
 
 collect_desc = 'Collect polished structural variants in directory.'
+MAX_START_DIFF = 10 # maximum start position distance to merge structural variants
+MAX_SVLEN_DIFF_PCT = 0.05 # maximum sv length percentage difference to merge structural variants
+
+def cmp_bedrecord_f(aobj, bobj, max_start_diff, max_svlen_diff_pct):
+    assert isinstance(aobj, BedRecord) and isinstance(bobj, BedRecord)
+    if aobj.chrom == bobj.chrom:
+        if abs(aobj.start - bobj.start) <= max_start_diff and \
+            abs(aobj.sv_len - bobj.sv_len) * 1.0 / max(aobj.sv_len, bobj.sv_len) <= max_svlen_diff_pct:
+            return 0
+        return aobj.start - bobj.start
+    else:
+        return 1 if aobj.chrom > bobj.chrom else -1
 
 
 def run_collect(work_dir, collected_bed_fn, min_qv, ref_ext_len):
@@ -28,8 +40,8 @@ def run_collect(work_dir, collected_bed_fn, min_qv, ref_ext_len):
         which have been polished
     * out.polished.bed --- BED file containing polished structural variants
     """
-    in_passed_bed_fn, in_skipped_bed_fn= op.join(work_dir, 'in.passed.bed'), op.join(work_dir, 'in.skipped.bed')
-    in_rejected_bed_fn =  op.join(work_dir, 'in.rejected.bed')
+    in_passed_bed_fn, in_skipped_bed_fn = op.join(work_dir, 'in.passed.bed'), op.join(work_dir, 'in.skipped.bed')
+    in_rejected_bed_fn = op.join(work_dir, 'in.rejected.bed')
     in_polished_bed_fn = op.join(work_dir, 'in.polished.bed')
     out_polished_bed_fn = op.join(work_dir, 'out.polished.bed')
 
@@ -54,7 +66,7 @@ def run_collect(work_dir, collected_bed_fn, min_qv, ref_ext_len):
             in_polished_writer.writeRecord(bed_record)
             for r in polished_bed_records:
                 out_polished_writer.writeRecord(r)
-                if prev_svobj and is_similar_svobj(r, prev_svobj):
+                if prev_svobj and cmp_bedrecord_f(r, prev_svobj, MAX_START_DIFF, MAX_SVLEN_DIFF_PCT):
                     log.info('Merge {} with {}'.format(bed2prefix(r), bed2prefix(prev_svobj)))
                 else:
                     collected_writer.writeRecord(r)

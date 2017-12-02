@@ -5,14 +5,17 @@ from pbsv.__utils import (get_default_argparser, setup_log, main_runner,
                           compose, subparser_builder, args_executer)
 from .independent.Constants import Constants as C
 
+
 def mkdir(path):
     if not op.isdir(path):
         os.makedirs(path)
     return path
 
+
 def validate_file(fn):
     if op.exists(fn):
         return fn
+
 
 def add_polish_parser_options(p):
     """Add `pbsvp polish` parser options"""
@@ -77,6 +80,7 @@ def _add_subreads_bam_parser_option(p):
     p.add_argument('subreads_bam', type=validate_file, help='Subreads BAM or SubreadSet')
     return p
 
+
 def _add_alignment_bam_parser_option(p):
     p.add_argument('alignments_bam', type=validate_file, help='Alignments BAM')
     return p
@@ -111,9 +115,11 @@ def _add_work_dir_parser_option(p):
     p.add_argument('work_dir', type=str, help="Working Directory")
     return p
 
+
 def _add_out_dir_parser_option(p):
     p.add_argument('out_dir', type=mkdir, help="Output Directory")
     return p
+
 
 def _add_genome_fa_parser_option(p):
     p.add_argument('genome_fa', type=validate_file, help="Reference Genome FASTA")
@@ -124,6 +130,7 @@ def _add_min_coverage_parser_option(p):
     p.add_argument('--min-coverage', type=int, default=C.MIN_POLISH_COVERAGE,
                    help="Minimum number of supportive reads to polish a strucutural variant")
     return p
+
 
 def _add_min_qv_parser_option(p):
     p.add_argument("--min-qv", default=C.MIN_POLISH_QV, type=int,

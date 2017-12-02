@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-import argparse
 import os.path as op
-import sys
 from pbcore.io import SubreadSet, FastaWriter
 
 from pbsv.independent.utils import realpath
@@ -77,10 +75,11 @@ def run_polish(genome_fa, subreads_xml_fn, aln_fn, in_bed_fn, out_dir,
     alnfile_obj = SingleFileOpener(aln_fn).alignfile
     subreads_ds_obj = SubreadSet(subreads_xml_fn)
     bedreader_obj = BedReader(in_bed_fn)
-    samples = bedreader_obj.samples
+    bedreader_obj.samples
 
     skipped_bed_fn, passed_bed_fn = op.join(out_dir, 'in.skipped.bed'), op.join(out_dir, 'in.passed.bed')
-    s_writer, p_writer = BedWriter(skipped_bed_fn, bedreader_obj.samples), BedWriter(passed_bed_fn, bedreader_obj.samples)
+    s_writer, p_writer = BedWriter(skipped_bed_fn, bedreader_obj.samples), BedWriter(
+        passed_bed_fn, bedreader_obj.samples)
 
     for bed_record, alns in yield_alns_from_bed_file(alnfile_obj, bedreader_obj=bedreader_obj):
         sv_prefix = bed2prefix(bed_record)

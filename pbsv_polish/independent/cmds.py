@@ -62,28 +62,33 @@ def make_input_json_cmd(bam_fn, json_fn, sample):
     c0 = 'echo [[\\\"{}\\\", \\\"{}\\\"]] > {}'.format(quote(bam_fn), quote(sample), quote(json_fn))
     return c0
 
+def chain_cmd(in_bam_fn, out_bam_fn, cfg_fn):
+    return 'pbsvutil chain {i} {o} --cfg_fn {cfg_fn}'.format(i=in_bam_fn, o=out_bam_fn, cfg_fn=cfg_fn)
+
 
 def pbsv_run_and_transform_cmds(reads_fn, ref_fa_fn, cfg_fn, o_bam_fn, o_bed_fn, algorithm='ngmlr'):
     """Using ngmlr or blasr to align reads to ref_fa_fn, then run `pbsv call` to call structural variants."""
     o_prefix = o_bam_fn[0:o_bam_fn.rfind('.bam')]
+    nochain_bam_fn = o_prefix + '.nochain.bam'
     if algorithm == 'ngmlr':
         # Call pbsvutil ngmlr to map reads_fn to ref_fa_fn to create sorted indexed bam file.
-        c0 = ngmlrmap_cmd(in_bam=reads_fn, ref_fn=ref_fa_fn, out_bam=o_bam_fn, cfg=cfg_fn)
+        c0 = ngmlrmap_cmd(in_bam=reads_fn, ref_fn=ref_fa_fn, out_bam=nochain_bam_fn, cfg=cfg_fn)
     elif algorithm == 'blasr':
-        c0 = blasr_cmd(query_fn=reads_fn, target_fn=ref_fa_fn, out_fn=o_bam_fn)
+        c0 = blasr_cmd(query_fn=reads_fn, target_fn=ref_fa_fn, out_fn=nochain_bam_fn)
     else:
         raise ValueError('Could not use algorithm %s to align reads to reference.' % algorithm)
 
-    c1 = sort_index_bam_inline_cmd(o_bam_fn)
+    c1 = chain_cmd(in_bam_fn=nochain_bam_fn, out_bam_fn=o_bam_fn, cfg_fn=cfg_fn)
+    c2 = sort_index_bam_inline_cmd(o_bam_fn)
 
     json_fn = o_prefix + '.json'  # create input json for `pbsv call`
-    c2 = make_input_json_cmd(o_bam_fn, json_fn, C.CONSENSUS_SAMPLE)
+    c3 = make_input_json_cmd(o_bam_fn, json_fn, C.CONSENSUS_SAMPLE)
 
     tmp_bed = o_bed_fn + '.use_substr_as_chrom.bed'
-    c3 = svcall_cmd(ref_fn=ref_fa_fn, in_bam=json_fn, out_bed=tmp_bed, cfg=cfg_fn)
-    c4 = rm_ngmlr_indices_cmd(ref_fn=ref_fa_fn)
-    c5 = sv_transform_coordinate_cmd(tmp_bed, o_bed_fn)
-    return [c0, c1, c2, c3, c4, c5]
+    c4 = svcall_cmd(ref_fn=ref_fa_fn, in_bam=json_fn, out_bed=tmp_bed, cfg=cfg_fn)
+    c5 = rm_ngmlr_indices_cmd(ref_fn=ref_fa_fn)
+    c6 = sv_transform_coordinate_cmd(tmp_bed, o_bed_fn)
+    return [c0, c1, c2, c3, c4, c5, c6]
 
 
 def rm_ngmlr_indices_cmd(ref_fn):

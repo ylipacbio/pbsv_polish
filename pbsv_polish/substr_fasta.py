@@ -5,6 +5,7 @@ import sys
 
 from pbsv.independent.utils import is_fasta
 from pbsv.libs import Fastafile, AlignmentFile
+from .utils import substr_fasta
 
 
 def get_parser():
@@ -17,9 +18,6 @@ def get_parser():
     parser.add_argument("end", help="End position of substring, 0-based, exclusive")
     parser.add_argument("output_fa_fn", help="Output FASTA filename")
     return parser
-
-
-from .utils import substr_fasta
 
 
 def run(args):

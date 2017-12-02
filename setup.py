@@ -44,6 +44,7 @@ setup(
     entry_points={'console_scripts': [
         'pbsvp = pbsv_polish.cli:pbsvp_main',
         'pbsvputil = pbsv_polish.cli:pbsvputil_main',
+        'substr_fasta =pbsv_polish.substr_fasta:main',
     ]},
     install_requires=_get_requirements(_get_local_file(_REQUIREMENTS_FILE)),
     tests_require=['pytest'],

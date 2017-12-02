@@ -257,7 +257,7 @@ class ActionRecord(object):
     """
     SEP = '\t'
     HEADER = SEP.join(['name', 'action', 'ad', 'dp', 'comment'])
-    SKIP, PASS, REJECTED, POLIHSED = ['SKIP', 'PASS', 'REJECTED', 'POLISHED']
+    SKIP, PASS, REJECTED, POLISHED = ['SKIP', 'PASS', 'REJECTED', 'POLISHED']
 
     def __init__(self, name, action, ad, dp, comment):
         self.name, self.action, self.ad, self.dp, self.comment = name, action, int(ad), int(dp), comment
@@ -275,4 +275,3 @@ class ActionRecord(object):
     def from_str(cls, line):
         name, action, ad, dp, comment = line.split(cls.SEP)[0:5]
         return ActionRecord(name, action, ad, dp, comment)
-

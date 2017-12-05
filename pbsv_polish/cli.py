@@ -35,7 +35,7 @@ def _args_run_polish(args):
     log.info("Running `{}`".format(POLISH_ENTRY))
     log.debug('Locals={}'.format(locals()))
     run_polish(genome_fa=args.genome_fa, subreads_xml_fn=args.subreads_bam, aln_fn=args.alignments_bam,
-               in_bed_fn=args.in_bed_or_vcf_fn, out_dir=args.out_dir,
+               in_bed_fn=args.in_rich_bed, out_dir=args.out_dir,
                min_coverage=args.min_coverage, min_qv=args.min_qv,
                ref_ext_len=args.ref_ext_len, use_sge=args.use_sge)
     return 0

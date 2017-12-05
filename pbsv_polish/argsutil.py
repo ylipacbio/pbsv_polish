@@ -23,7 +23,8 @@ def add_polish_parser_options(p):
         _add_genome_fa_parser_option,
         _add_subreads_bam_parser_option,
         _add_alignment_bam_parser_option,
-        _add_in_bed_vcf_parser_option,
+        _add_in_rich_bed_parser_option,
+        #_add_in_bed_vcf_parser_option,
         _add_out_dir_parser_option,
         _add_min_coverage_parser_option,
         _add_min_qv_parser_option,
@@ -170,6 +171,9 @@ def _add_in_bed_vcf_parser_option(p):
     p.add_argument('in_bed_or_vcf_fn', type=validate_file, help='Input structural variants in BED or VCF')
     return p
 
+def _add_in_rich_bed_parser_option(p):
+    p.add_argument('in_rich_bed', type=validate_file, help='Input structural variants in rich BED.')
+    return p
 
 def _add_out_bed_vcf_parser_option(p):
     p.add_argument('out_bed_or_vcf_fn', type=str, help='Output structural variants in BED or VCF')

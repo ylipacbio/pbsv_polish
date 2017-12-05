@@ -5,11 +5,14 @@ from pbcore.io import SubreadSet, FastaWriter
 
 from pbsv.independent.utils import realpath
 from pbsv.cli import _mkdir
-from pbsv.io.VcfIO import BedReader, BedWriter
+from pbsv.io.VcfIO import BedReader, BedWriter, RichBedReader
 from pbsv.io.bamstream import SingleFileOpener
 from .independent import Constants as C
 from .io import SVPolishFiles
-from .utils import Fastafile, bed2prefix, get_query_subreads_from_alns, get_query_zmws_from_alns, get_ref_extension_for_sv, make_subreads_bam_of_zmws2, substr_fasta, yield_alns_from_bed_file, ActionRecord
+from .utils import (Fastafile, bed2prefix, get_query_subreads_from_alns,
+        get_query_zmws_from_alns, get_ref_extension_for_sv,
+        make_subreads_bam_of_zmws2, substr_fasta, yield_alns_from_bed_file,
+        ActionRecord, get_movie_and_zmw_from_name)
 
 import logging
 logging.basicConfig(format='%(asctime) %(message)s')
@@ -17,6 +20,21 @@ logging.getLogger().setLevel(logging.INFO)
 log = logging.getLogger()
 
 polish_desc = 'Polish input structural variants'
+
+def get_supporting_zmws(sample_reads_dict):
+    """
+    Return a list of (non-redundant) zmws from sample_reads_dict, where
+    sample_reads_dict --- {sample: [reads]}
+    ...doctest:
+        >>> get_supporting_zmws({'s1': ['movie/0/0_1', 'movie2/2/10_11'], 's2': ['movie/0/13_14']})
+        ['movie2/2', 'movie/0']
+    """
+    zmws = set()
+    for sample in sample_reads_dict.keys():
+        for r in sample_reads_dict[sample]:
+            movie, zmw = get_movie_and_zmw_from_name(r)
+            zmws.add('{}/{}'.format(movie, zmw))
+    return list(zmws)
 
 
 def polish_a_sv(bed_record, alns, svobj_dir, subreads_ds_obj, reference_fasta_obj, make_reference_fa, make_subreads_bam, make_scripts, execute_scripts, min_qv, ref_ext_len, use_sge):
@@ -27,7 +45,8 @@ def polish_a_sv(bed_record, alns, svobj_dir, subreads_ds_obj, reference_fasta_ob
     * if make_scripts is True, generate scripts to call polished structural variant
     """
     # srs = get_query_subreads_from_alns(alns)
-    zmws = get_query_zmws_from_alns(alns)
+    # zmws = get_query_zmws_from_alns(alns)
+    zmws = get_supporting_zmws(bed_record.supporting_reads)
     svp_files_obj = SVPolishFiles(root_dir=svobj_dir, min_qv=min_qv, ref_ext_len=ref_ext_len)
     _mkdir(svp_files_obj.root_dir)  # make a subdirectory (e.g., chrI_0_100_Deletion_-100) for all polishing files
     # TODO: special treatment for heterzygous sv?
@@ -74,7 +93,7 @@ def run_polish(genome_fa, subreads_xml_fn, aln_fn, in_bed_fn, out_dir,
     reference_fasta_obj = Fastafile(genome_fa)
     alnfile_obj = SingleFileOpener(aln_fn).alignfile
     subreads_ds_obj = SubreadSet(subreads_xml_fn)
-    bedreader_obj = BedReader(in_bed_fn)
+    bedreader_obj = RichBedReader(in_bed_fn)
     bedreader_obj.samples
 
     skipped_bed_fn, passed_bed_fn = op.join(out_dir, 'in.skipped.bed'), op.join(out_dir, 'in.passed.bed')

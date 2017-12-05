@@ -49,11 +49,11 @@ def polish_a_sv(bed_record, alns, svobj_dir, subreads_ds_obj, reference_fasta_ob
     zmws = get_supporting_zmws(bed_record.supporting_reads)
     svp_files_obj = SVPolishFiles(root_dir=svobj_dir, min_qv=min_qv, ref_ext_len=ref_ext_len)
     _mkdir(svp_files_obj.root_dir)  # make a subdirectory (e.g., chrI_0_100_Deletion_-100) for all polishing files
-    # TODO: special treatment for heterzygous sv?
     if make_reference_fa:
         # make a substring spanning the expected structural variants
-        ref_start, ref_end = get_ref_extension_for_sv(
-            bed_record, reference_fasta_obj.get_reference_length(bed_record.chrom))
+        ref_start, ref_end = get_ref_extension_for_sv(bed_record,
+            reference_fasta_obj.get_reference_length(bed_record.chrom),
+            ref_ext_len=ref_ext_len)
         substr_fasta(fileobj=reference_fasta_obj, chrom=bed_record.chrom,
                      start=ref_start, end=ref_end, out_fa_fn=svp_files_obj.sv_ref_fa)
 

@@ -7,6 +7,7 @@ Make a consensus sequence from subreads.bam
 (3) Call pbdagcon
 """
 
+from __future__ import division
 from collections import defaultdict
 import os
 import os.path as op
@@ -240,6 +241,17 @@ def get_fasta_fn_from_subreads_bam_fn(bam_fn):
     return fasta_fn
 
 
+
+def split_seq(seq, name, o_fasta, stepsize):
+    with FastaWriter(o_fasta) as writer:
+        n_seq = max(1, len(seq) // stepsize)
+        for i in range(0, n_seq - 1):
+            s, e = i * stepsize, i * stepsize + stepsize
+            writer.writeRecord(name + '/{}_{}'.format(s, e), seq[s:e])
+        s, e = (n_seq - 1) * stepsize, len(seq)
+        writer.writeRecord(name + '/{}_{}'.format(s, e), seq[s:e])
+
+
 def get_region_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, work_dir):
     """
     a_fa_obj --- Fastafile a, which must contain sequence a_seq_name, and may contain other sequences
@@ -253,32 +265,24 @@ def get_region_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, work_dir):
     and return (a_seq_name, start, end).
     """
     assert isinstance(a_fa_obj, Fastafile) and isinstance(b_fa_obj, Fastafile)
-    a_fa_fn, b_fa_fn = a_fa_obj.filename, b_fa_obj.filename
     if a_seq_name and not (a_seq_name in a_fa_obj.references):
         raise ValueError("FASTA file %s does not contain sequence %s" % (a_fa_fn, a_seq_name))
-    assert_fasta_has_one_seq(b_fa_obj)
-    # call `blasr` to align a and b forward and backward (aka a to b and b to a).
-    a2b_m4_fn = op.join(work_dir, '%s.vs.%s.m4' % (basename_prefix_of_fn(a_fa_fn), basename_prefix_of_fn(b_fa_fn)))
+    splitted_b = basename_prefix_of_fn(b_fa_obj.filename) + '.splitted.fasta'
+
+    # Split the only sequence in b_fa_obj into small pieces, each has >= 1000 base pairs.
+    assert len(b_fa_obj.references) == 1
+    bname = b_fa_obj.references[0]
+    split_seq(seq=b_fa_obj.fetch(bname), name=bname + '.splitted', o_fasta=splitted_b, stepsize=1000)
+
+    # Align b_fa_obj to a_fa_obj to find substring in a mappable to b
+    a_fa_fn, b_fa_fn = a_fa_obj.filename, splitted_b
     b2a_m4_fn = op.join(work_dir, '%s.vs.%s.m4' % (basename_prefix_of_fn(b_fa_fn), basename_prefix_of_fn(a_fa_fn)))
-    execute(blasr_cmd(query_fn=a_fa_fn, target_fn=b_fa_fn, out_fn=a2b_m4_fn))
     execute(blasr_cmd(query_fn=b_fa_fn, target_fn=a_fa_fn, out_fn=b2a_m4_fn))
-    start, end = get_span_region_of_seq_from_m4(a2b_m4_fn=a2b_m4_fn, b2a_m4_fn=b2a_m4_fn, a_seq_name=a_seq_name)
-    return (a_seq_name, start, end)
 
-
-def get_span_region_of_seq_from_m4(a2b_m4_fn, b2a_m4_fn, a_seq_name):
-    """
-    a2b_m4_fn --- m4 output mapping FASTA file A to FASTA file B
-    b2a_m4_fn --- m4 output mapping FASTA file B to FASTA file A
-    a_seq_name --- name of a sequence (or chromosome) in FASTA file A
-    return (a_seq_name, start, end) which spans all alignments in sequence of name `a_seq_name` in FASTA file A."""
-    a2b_dict = _get_query_span_regions_from_m4(a2b_m4_fn)  # dict {query_name: NSE(query_name, start, end)}
     b2a_dict = _get_target_span_regions_from_m4(b2a_m4_fn)  # dict {target_name: NSE(target_name, start, end)}
-    assert a_seq_name in a2b_dict.keys()
     assert a_seq_name in b2a_dict.keys()
-    a2b_start, a2b_end = a2b_dict[a_seq_name].start, a2b_dict[a_seq_name].end
     b2a_start, b2a_end = b2a_dict[a_seq_name].start, b2a_dict[a_seq_name].end
-    return apply_operator(a2b_start, b2a_start, min), apply_operator(a2b_end, b2a_end, max)
+    return (a_seq_name, b2a_start, b2a_end)
 
 
 class NSE(object):

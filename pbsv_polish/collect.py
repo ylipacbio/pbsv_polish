@@ -26,6 +26,21 @@ def cmp_bedrecord_f(aobj, bobj, max_start_diff, max_svlen_diff_pct):
         return 1 if aobj.chrom > bobj.chrom else -1
 
 
+def remove_redundant_objs(objs, cmp_f):
+    """Remove redundant objects from objs and return non-redundant objects.
+    objs --- a list of sorted objects.
+    cmp_f --- cmp_f(aobj, bobj) return 0 if aobj 'equals' bobj and -1 if aobj is less than bobj, and 1 otherwise.
+    """
+    ret = []
+    for obj in objs:
+        if ret:
+            if cmp_f(obj, ret[-1]) == 0:
+                log.info('Redundant objects {} and {}'.format(repr(obj), repr(ret[-1])))
+                continue
+        ret.append(obj)
+    return ret
+
+
 def run_collect(work_dir, collected_bed_fn, min_qv, ref_ext_len):
     """
     Collect polished structural variants in work_dir, while work_dir must contain
@@ -38,7 +53,10 @@ def run_collect(work_dir, collected_bed_fn, min_qv, ref_ext_len):
         which are rejected (e.g., not having consensus sequence) by polishing
     * in.polished.bed --- BED file containing original input structural variants
         which have been polished
-    * out.polished.bed --- BED file containing polished structural variants
+    * out.polished.bed --- BED file containing polished structural variants, may
+      contain redundant structural variants
+    The output file collected_bed_fn is identical to out.polished.bed except that
+    redundant structural variants have been removed.
     """
     in_passed_bed_fn, in_skipped_bed_fn = op.join(work_dir, 'in.passed.bed'), op.join(work_dir, 'in.skipped.bed')
     in_rejected_bed_fn = op.join(work_dir, 'in.rejected.bed')
@@ -49,10 +67,8 @@ def run_collect(work_dir, collected_bed_fn, min_qv, ref_ext_len):
     in_polished_writer = BedWriter(in_polished_bed_fn, samples=reader.samples)
     in_rejected_writer = BedWriter(in_rejected_bed_fn, samples=reader.samples)
     out_polished_writer = BedWriter(out_polished_bed_fn, samples=[C.CONSENSUS_SAMPLE])
-    collected_writer = BedWriter(collected_bed_fn, samples=[C.CONSENSUS_SAMPLE])
 
-    prev_svobj = None
-
+    collected_bed_records = []
     for bed_record in reader:
         sv_prefix = bed2prefix(bed_record)
         svobj_dir = realpath(op.join(work_dir, sv_prefix))
@@ -66,17 +82,22 @@ def run_collect(work_dir, collected_bed_fn, min_qv, ref_ext_len):
             in_polished_writer.writeRecord(bed_record)
             for r in polished_bed_records:
                 out_polished_writer.writeRecord(r)
-                if prev_svobj and cmp_bedrecord_f(r, prev_svobj, MAX_START_DIFF, MAX_SVLEN_DIFF_PCT):
-                    log.info('Merge {} with {}'.format(bed2prefix(r), bed2prefix(prev_svobj)))
-                else:
-                    collected_writer.writeRecord(r)
-                prev_svobj = r
+            collected_bed_records.extend(polished_bed_records)
+
+    def bed_record_to_key(bed_record):
+        return (bed_record.chrom, bed_record.start)
+    def cmp_f(aobj, bobj):
+        return cmp_bedrecord_f(aobj, bobj, MAX_START_DIFF, MAX_SVLEN_DIFF_PCT)
+    collected_bed_records = sorted(collected_bed_records, key=bed_record_to_key)
+    collected_bed_records = remove_redundant_objs(collected_bed_records, cmp_f)
+    with BedWriter(collected_bed_fn, samples=[C.CONSENSUS_SAMPLE]) as writer:
+        for bed_record in collected_bed_records:
+            writer.writeRecord(bed_record)
 
     reader.close()
     in_polished_writer.close()
     in_rejected_writer.close()
     out_polished_writer.close()
-    collected_writer.close()
 
     def _f(bed_fn, what):
         n = len([r for r in BedReader(bed_fn)])

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from pbsv.independent.utils import _is_fmt, cmds_to_bash, execute, realpath, mv_cmd, autofmt, is_fasta
-from pbsv.run import svcall_cmd, ngmlrmap_cmd, sort_index_chain_bam_cmd
+from pbsv.run import svcall_cmd, sort_index_chain_bam_cmd, map_subreads_cmd
 from .Constants import Constants as C
 from .utils import is_fastq
 from ..__init__ import TRANSFORM_ENTRY, TRIM_ENTRY, SVDAGCON_ENTRY
@@ -72,7 +72,7 @@ def pbsv_run_and_transform_cmds(reads_fn, ref_fa_fn, cfg_fn, o_bam_fn, o_bed_fn,
     nochain_bam_fn = o_prefix + '.nochain.bam'
     if algorithm == 'ngmlr':
         # Call pbsvutil ngmlr to map reads_fn to ref_fa_fn to create sorted indexed bam file.
-        c0 = ngmlrmap_cmd(in_bam=reads_fn, ref_fn=ref_fa_fn, out_bam=nochain_bam_fn, cfg=cfg_fn)
+        c0 = map_subreads_cmd(in_bam=reads_fn, ref_fn=ref_fa_fn, out_bam=nochain_bam_fn, cfg=cfg_fn)
     elif algorithm == 'blasr':
         c0 = blasr_cmd(query_fn=reads_fn, target_fn=ref_fa_fn, out_fn=nochain_bam_fn)
     else:

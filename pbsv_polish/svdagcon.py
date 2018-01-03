@@ -266,7 +266,7 @@ def get_region_of_seq_in_a_match_b(a_fa_obj, b_fa_obj, a_seq_name, work_dir):
     """
     assert isinstance(a_fa_obj, Fastafile) and isinstance(b_fa_obj, Fastafile)
     if a_seq_name and not (a_seq_name in a_fa_obj.references):
-        raise ValueError("FASTA file %s does not contain sequence %s" % (a_fa_fn, a_seq_name))
+        raise ValueError("FASTA file %s does not contain sequence %s" % (a_fa_obj.filename, a_seq_name))
     splitted_b = op.join(op.dirname(b_fa_obj.filename),
                          basename_prefix_of_fn(b_fa_obj.filename) + '.splitted.fasta')
 

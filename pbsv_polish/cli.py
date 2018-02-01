@@ -14,11 +14,13 @@ Define `pbsvputil`, utils for `pbsvp`, including
 import sys
 import logging
 from .__init__ import (get_version, POLISH_ENTRY, COLLECT_ENTRY, TRIM_ENTRY,
-                       SVDAGCON_ENTRY, TRANSFORM_ENTRY)
+                       SVDAGCON_ENTRY, TRANSFORM_ENTRY, EXTRACTSR_ENTRY)
 from pbsv.__utils import (get_default_argparser, setup_log, main_runner,
                           compose, subparser_builder, validate_file, args_executer)
 from .argsutil import (add_polish_parser_options,  add_collect_parser_options,
-                       add_trim_parser_options, add_transform_parser_options, add_svdagcon_parser_options)
+                       add_trim_parser_options, add_transform_parser_options,
+                       add_svdagcon_parser_options, add_extractsr_parser_options)
+from .utils import make_subreads_bam_of_zmws2
 from .polish import polish_desc, run_polish
 from .collect import collect_desc, run_collect
 from .trim_lq import trim_desc, run_trim
@@ -75,6 +77,15 @@ def _args_run_transform(args):
     return 0
 
 
+def _args_run_extract_subreads(args):
+    log.info('Running `{}`'.format(EXTRACTSR_ENTRY))
+    log.debug('Locals={}'.format(locals()))
+    make_subreads_bam_of_zmws2(in_subreads_fn_or_obj=args.in_bam_or_xml,
+            zmws=args.zmws, out_bam_fn=args.out_bam_or_xml,
+            out_fa_fn=args.out_bam[0:args.out_bam.rfind('.')]+'.fasta')
+    return 0
+
+
 def pbsvp_get_parser():
     """Get parser for pbsvp subcommands"""
     desc = "PacBio Structural Variants Polish Tool Suite"
@@ -113,6 +124,10 @@ def pbsvputil_get_parser():
 
     # `pbsvputil transform-coordinate`
     builder('transform-coordinate', transform_desc, add_transform_parser_options, _args_run_transform)
+
+    # `pbsvputil extract-subreads`
+    extractsr_desc = """Extract subreads bam of zmws ('movie/zmw') from input subreads bam or xml."""
+    builder('extract-subreads', extractsr_desc, add_extractsr_parser_options, _args_run_extract_subreads)
     return p
 
 

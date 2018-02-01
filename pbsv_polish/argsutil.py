@@ -4,6 +4,7 @@ import os.path as op
 from pbsv.__utils import (get_default_argparser, setup_log, main_runner,
                           compose, subparser_builder, args_executer)
 from .independent.Constants import Constants as C
+from .independent.utils import get_zmws_from_iter
 
 
 def mkdir(path):
@@ -15,6 +16,14 @@ def mkdir(path):
 def validate_file(fn):
     if op.exists(fn):
         return fn
+
+def parse_zmws_from_str(s, sep=';'):
+    """
+    ...doctest:
+        >>> parse_zmws_from_str('movie/1;movie/2;movie2/3')
+        ['movie/1', 'movie/2', 'movie2/3']
+    """
+    return get_zmws_from_iter(s.split(sep))
 
 
 def add_polish_parser_options(p):
@@ -75,6 +84,30 @@ def add_svdagcon_parser_options(p):
     ]
     f = compose(*fs[::-1])
     return f(p)
+
+
+def add_extractsr_parser_options(p):
+    fs = [
+        _add_in_subreads_bam_parser_option,
+        _add_zmws_parser_option,
+        _add_out_subreads_bam_parser_option,
+    ]
+    f = compose(*fs[::-1])
+    return f(p)
+
+def _add_zmws_parser_option(p):
+    p.add_argument('zmws', type=parse_zmws_from_str, help='semicolon separated zmws, e.g., movie/zmw1;movie/zmw2;movie2/zmw3')
+    return p
+
+
+def _add_in_subreads_bam_parser_option(p):
+    p.add_argument('in_subreads_bam', type=validate_file, help='Input Subreads BAM or SubreadSet')
+    return p
+
+
+def _add_out_subreads_bam_parser_option(p):
+    p.add_argument('out_subreads_bam', type=validate_file, help='Output Subreads BAM or SubreadSet')
+    return p
 
 
 def _add_subreads_bam_parser_option(p):

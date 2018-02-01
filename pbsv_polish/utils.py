@@ -10,6 +10,7 @@ from pbsv.io.VcfIO import BedRecord
 from pbsv.independent.common import RefRegion, SvType, SvFmts, SvFmt
 from pbsv.independent.utils import _is_fmt, cmds_to_bash, execute, realpath, autofmt, is_fasta
 from .independent import Constants as C
+from .independent.utils import get_movie_and_zmw_from_name, get_zmws_from_iter
 
 import logging
 logging.basicConfig()
@@ -17,14 +18,12 @@ logging.getLogger().setLevel(logging.INFO)
 log = logging.getLogger()
 
 
-def get_movie_and_zmw_from_name(name):
-    """Given a string of pacbio zmw name or read name, return movie and zmw"""
+def zmw_from_subread(subread):
+    """Given a subread 'movie/zmw/start_end', return 'movie/zmw'"""
     try:
-        fs = name.strip().split(' ')[0].split('/')
-        movie, zmw = fs[0], fs[1]
-        return movie, int(zmw)
-    except ValueError:
-        raise ValueError("Read %r is not a PacBio read." % name)
+        return '/'.join(subread.split('/')[0:2])
+    except Exception:
+        raise ValueError("Could not convert read %s to zmw" % subread)
 
 
 def write_fasta(out_fa_fn, records):
@@ -36,6 +35,8 @@ def write_fasta(out_fa_fn, records):
 
 def substr_fasta(fileobj, chrom, start, end, out_fa_fn):
     """fetch a substring of reference fasta sequence and save to output fasta file out_fa_fn"""
+    assert start <= end
+    assert chrom in fileobj.references
     try:
         seq = fileobj.fetch(str(chrom), int(start), int(end))
     except Exception:
@@ -57,14 +58,6 @@ def to_ref_region(bed_record):
 def get_alns_within_ref_region(alnfile_obj, ref_region):
     """Return a list of alignments within a ref region."""
     return [aln for aln in iterator_of_alignments_in_ref_regions(alnfile_obj, [ref_region])]
-
-
-def zmw_from_subread(subread):
-    """Given a subread 'movie/zmw/start_end', return 'movie/zmw'"""
-    try:
-        return '/'.join(subread.split('/')[0:2])
-    except Exception:
-        raise ValueError("Could not convert read %s to zmw" % subread)
 
 
 def write_to_bash_file(cmds, bash_sh_fn, write_mode='w'):
